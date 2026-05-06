@@ -18,12 +18,17 @@ export type DiscoverySource =
   | "institucion"
   | "otro";
 
+export type UploadedFilePurpose = "student-id" | "image-consent" | "other";
+
 export type UploadedFileMetadata = {
   fileName: string;
-  fileType: string;
   fileSize: number;
-  storagePath?: string;
-  downloadURL?: string;
+  fileType: string;
+  fileUrl: string;
+  fileKey: string;
+  uploadedAt?: string;
+  purpose?: UploadedFilePurpose;
+  provider: "uploadthing";
 };
 
 export type TeamMember = {
@@ -36,9 +41,7 @@ export type TeamMember = {
   universityYear?: string;
   schoolGrade?: string;
   about?: string;
-  studentIdFile?: File | null;
-  studentIdFileName?: string;
-  studentIdFileMetadata?: UploadedFileMetadata;
+  studentIdFile?: UploadedFileMetadata | null;
 };
 
 export type ResponsibleRole =
@@ -66,18 +69,16 @@ export type Responsible = {
 export type RegistrationFormData = {
   category: RegistrationCategory;
   teamName: string;
-  teamOmegaUpUser: string;
   institution: string;
   discoverySource: DiscoverySource | "";
   discoverySourceOther?: string;
   teamDescription: string;
+  teamOmegaUpUser: string;
   contactEmail?: string;
   members: [TeamMember, TeamMember, TeamMember];
-  responsible?: Responsible;
+  responsible: Responsible;
   universityImageConsentAccepted?: boolean;
-  schoolImageConsentFiles?: File[];
-  schoolImageConsentFileNames?: string[];
-  schoolImageConsentFileMetadata?: UploadedFileMetadata[];
+  schoolImageConsentFiles?: UploadedFileMetadata[];
   dataReviewAccepted: boolean;
   privacyAccepted: boolean;
   status: RegistrationStatus;
@@ -86,10 +87,7 @@ export type RegistrationFormData = {
   updatedAt?: string;
 };
 
-export type RegistrationDocumentMember = Omit<
-  TeamMember,
-  "studentIdFile" | "age"
-> & {
+export type RegistrationDocumentMember = Omit<TeamMember, "age"> & {
   age: number;
 };
 
@@ -97,14 +95,14 @@ export type RegistrationDocument = {
   id: string;
   category: RegistrationCategory;
   teamName: string;
-  teamOmegaUpUser: string;
   institution: string;
   discoverySource: DiscoverySource | "";
   discoverySourceOther?: string;
   teamDescription: string;
+  teamOmegaUpUser: string;
   contactEmail?: string;
   members: [RegistrationDocumentMember, RegistrationDocumentMember, RegistrationDocumentMember];
-  responsible?: Responsible;
+  responsible: Responsible;
   consents: {
     dataReviewAccepted: boolean;
     privacyAccepted: boolean;
@@ -118,5 +116,3 @@ export type RegistrationDocument = {
 };
 
 export type FieldErrors = Record<string, string>;
-
-export type RegistrationStep = number;

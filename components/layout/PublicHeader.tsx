@@ -15,14 +15,6 @@ export function PublicHeader() {
             width={122}
           />
         </Link>
-        <div className="flex items-center gap-2">
-          <Link
-            className="rounded-md border border-csp-white/40 px-3 py-1.5 text-xs font-semibold text-csp-white hover:bg-csp-white/10"
-            href="/admin"
-          >
-            Acceso admin
-          </Link>
-        </div>
       </div>
     </header>
   );

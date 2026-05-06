@@ -13,6 +13,7 @@ import {
   RegistrationCategory,
   RegistrationFormData,
   TeamMember,
+  UploadedFileMetadata,
 } from "@/lib/types";
 import {
   getStepKeysByCategory,
@@ -29,9 +30,10 @@ type RegistrationFormProps = {
   category: RegistrationCategory;
 };
 
-type SubmitStatus = "idle" | "saving" | "uploading" | "success";
+type SubmitStatus = "idle" | "saving" | "success";
 
-const DRAFT_VERSION = 2;
+const DRAFT_VERSION = 3;
+const DRAFT_KEY = "csp-registration-draft";
 const STEP_LABELS: Record<RegistrationStepKey, string> = {
   team: "Equipo",
   "member-1": "Miembro 1",
@@ -53,7 +55,6 @@ function createEmptyMember(id: string): TeamMember {
     schoolGrade: "",
     about: "",
     studentIdFile: null,
-    studentIdFileName: "",
   };
 }
 
@@ -61,32 +62,28 @@ function createInitialFormData(category: RegistrationCategory): RegistrationForm
   return {
     category,
     teamName: "",
-    teamOmegaUpUser: "",
     institution: "",
     discoverySource: "",
     discoverySourceOther: "",
     teamDescription: "",
+    teamOmegaUpUser: "",
     contactEmail: "",
     members: [
       createEmptyMember("member-1"),
       createEmptyMember("member-2"),
       createEmptyMember("member-3"),
     ],
-    responsible:
-      category === "colegios"
-        ? {
-            fullName: "",
-            email: "",
-            phone: "",
-            institution: "",
-            role: "",
-            relationship: "",
-            comments: "",
-          }
-        : undefined,
+    responsible: {
+      fullName: "",
+      email: "",
+      phone: "",
+      institution: "",
+      role: "",
+      relationship: "",
+      comments: "",
+    },
     universityImageConsentAccepted: false,
     schoolImageConsentFiles: [],
-    schoolImageConsentFileNames: [],
     dataReviewAccepted: false,
     privacyAccepted: false,
     status: "recibida",
@@ -94,24 +91,10 @@ function createInitialFormData(category: RegistrationCategory): RegistrationForm
   };
 }
 
-function getDraftStorageKey(category: RegistrationCategory) {
-  return `csp-2026-registration-draft-${category}`;
-}
-
 function sanitizeDraft(formData: RegistrationFormData) {
   return {
     version: DRAFT_VERSION,
     ...formData,
-    members: formData.members.map((member) => ({
-      ...member,
-      studentIdFile: null,
-      studentIdFileName: member.studentIdFile?.name || member.studentIdFileName || "",
-    })),
-    schoolImageConsentFiles: [],
-    schoolImageConsentFileNames:
-      formData.schoolImageConsentFiles?.map((file) => file.name) ??
-      formData.schoolImageConsentFileNames ??
-      [],
   };
 }
 
@@ -119,29 +102,32 @@ function parseDraft(rawDraft: string, category: RegistrationCategory): Registrat
   try {
     const parsed = JSON.parse(rawDraft) as Partial<RegistrationFormData> & {
       version?: number;
+      category?: RegistrationCategory;
     };
-    if (parsed.version !== DRAFT_VERSION) return null;
+    if (parsed.version !== DRAFT_VERSION || parsed.category !== category) return null;
 
     const initial = createInitialFormData(category);
-    const restoredMembers = (parsed.members ?? initial.members).map((member, index) => {
-      const base = initial.members[index];
-      return {
-        ...base,
-        ...member,
-        studentIdFile: null,
-        studentIdFileName: member.studentIdFileName || "",
-      };
-    }) as RegistrationFormData["members"];
+    const mergedMembers = (parsed.members ?? initial.members).map((member, index) => ({
+      ...initial.members[index],
+      ...member,
+      studentIdFile:
+        member.studentIdFile && typeof member.studentIdFile === "object"
+          ? (member.studentIdFile as UploadedFileMetadata)
+          : null,
+    })) as RegistrationFormData["members"];
 
     return {
       ...initial,
       ...parsed,
       category,
-      members: restoredMembers,
-      schoolImageConsentFiles: [],
-      schoolImageConsentFileNames:
-        parsed.schoolImageConsentFileNames ?? initial.schoolImageConsentFileNames,
-      responsible: category === "colegios" ? parsed.responsible ?? initial.responsible : undefined,
+      members: mergedMembers,
+      schoolImageConsentFiles: Array.isArray(parsed.schoolImageConsentFiles)
+        ? parsed.schoolImageConsentFiles
+        : [],
+      responsible: {
+        ...initial.responsible,
+        ...(parsed.responsible ?? {}),
+      },
     };
   } catch {
     return null;
@@ -152,28 +138,27 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
   const router = useRouter();
   const stepKeys = useMemo(() => getStepKeysByCategory(category), [category]);
   const stepLabels = useMemo(() => stepKeys.map((key) => STEP_LABELS[key]), [stepKeys]);
-  const storageKey = useMemo(() => getDraftStorageKey(category), [category]);
 
   const [formData, setFormData] = useState<RegistrationFormData>(() =>
     createInitialFormData(category),
   );
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [stepStates, setStepStates] = useState<StepState[]>(
-    () => stepKeys.map(() => "default"),
-  );
+  const [stepStates, setStepStates] = useState<StepState[]>(() => stepKeys.map(() => "default"));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [submitError, setSubmitError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [isDraftReady, setIsDraftReady] = useState(false);
+  const [activeUploads, setActiveUploads] = useState<Record<string, boolean>>({});
 
   const currentStepKey = stepKeys[currentStepIndex];
   const canGoBack = currentStepIndex > 0;
   const isLastStep = currentStepIndex === stepKeys.length - 1;
+  const isUploadingAnyFile = Object.values(activeUploads).some(Boolean);
 
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
-      const rawDraft = window.localStorage.getItem(storageKey);
+      const rawDraft = window.localStorage.getItem(DRAFT_KEY);
       if (!rawDraft) {
         setIsDraftReady(true);
         return;
@@ -182,34 +167,32 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
       const parsed = parseDraft(rawDraft, category);
       if (parsed) {
         setFormData(parsed);
-        setToastMessage(
-          "Se restauro un borrador. Debes volver a adjuntar los archivos para enviar.",
-        );
+        setToastMessage("Se restauro un borrador.");
       }
       setIsDraftReady(true);
     }, 0);
 
     return () => window.clearTimeout(restoreTimer);
-  }, [category, storageKey]);
+  }, [category]);
 
   useEffect(() => {
     if (!isDraftReady) return;
-    window.localStorage.setItem(storageKey, JSON.stringify(sanitizeDraft(formData)));
-  }, [formData, isDraftReady, storageKey]);
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(sanitizeDraft(formData)));
+  }, [formData, isDraftReady]);
 
   useEffect(() => {
     if (!toastMessage) return;
-    const timeout = window.setTimeout(() => setToastMessage(""), 3500);
+    const timeout = window.setTimeout(() => setToastMessage(""), 3000);
     return () => window.clearTimeout(timeout);
   }, [toastMessage]);
 
   const submitStatusText =
     submitStatus === "saving"
       ? "Guardando inscripcion..."
-      : submitStatus === "uploading"
-        ? "Subiendo archivos..."
-        : submitStatus === "success"
-          ? "Inscripcion enviada"
+      : submitStatus === "success"
+        ? "Inscripcion enviada"
+        : isUploadingAnyFile
+          ? "Subiendo archivo..."
           : "";
 
   const setStepStateByValidation = (index: number, stepErrors: FieldErrors) => {
@@ -242,28 +225,36 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
     });
   };
 
-  const updateMemberFile = (memberIndex: number, file: File | null) => {
-    updateMember(memberIndex, { studentIdFile: file, studentIdFileName: file?.name ?? "" });
+  const setUploadingState = (key: string, uploading: boolean) => {
+    setActiveUploads((prev) => ({ ...prev, [key]: uploading }));
   };
 
   const goToStep = (index: number) => {
+    if (isUploadingAnyFile || submitStatus === "saving") return;
     validateAndMarkStep(currentStepIndex);
     setErrors({});
     setCurrentStepIndex(index);
   };
 
   const handleNext = () => {
+    if (isUploadingAnyFile || submitStatus === "saving") return;
     const stepErrors = validateAndMarkStep(currentStepIndex);
     setErrors(stepErrors);
     setCurrentStepIndex((prev) => Math.min(prev + 1, stepKeys.length - 1));
   };
 
   const handlePrevious = () => {
+    if (isUploadingAnyFile || submitStatus === "saving") return;
     setErrors({});
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
   };
 
+  const hasBlockingErrors = Object.keys(validateAllSteps(formData)).length > 0;
+  const isSubmitDisabled = isUploadingAnyFile || submitStatus === "saving" || hasBlockingErrors;
+
   const handleSubmit = async () => {
+    if (isUploadingAnyFile) return;
+
     const allErrors = validateAllSteps(formData);
     const nextStates = stepKeys.map((stepKey) =>
       Object.keys(validateStepByKey(formData, stepKey)).length ? "invalid" : "valid",
@@ -280,7 +271,6 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
     setSubmitStatus("saving");
 
     try {
-      setSubmitStatus("uploading");
       const registrationId = await createRegistration(formData);
       const emailPayload = buildRegistrationEmailPayload(formData, registrationId);
       console.log(
@@ -288,7 +278,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
         emailPayload,
       );
       setSubmitStatus("success");
-      window.localStorage.removeItem(storageKey);
+      window.localStorage.removeItem(DRAFT_KEY);
       router.push(`/inscripcion/exito?id=${registrationId}`);
     } catch (error) {
       setSubmitError(
@@ -316,9 +306,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
         ) : null}
 
         {submitError ? (
-          <p className="rounded-md bg-csp-error/10 p-3 text-sm text-csp-error">
-            {submitError}
-          </p>
+          <p className="rounded-md bg-csp-error/10 p-3 text-sm text-csp-error">{submitError}</p>
         ) : null}
 
         {currentStepKey === "team" ? (
@@ -332,7 +320,8 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
             member={formData.members[0]}
             memberIndex={0}
             onChange={(changes) => updateMember(0, changes)}
-            onFileChange={(file) => updateMemberFile(0, file)}
+            onFileChange={(file) => updateMember(0, { studentIdFile: file })}
+            onUploadingChange={(uploading) => setUploadingState("member-1", uploading)}
           />
         ) : null}
 
@@ -343,7 +332,8 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
             member={formData.members[1]}
             memberIndex={1}
             onChange={(changes) => updateMember(1, changes)}
-            onFileChange={(file) => updateMemberFile(1, file)}
+            onFileChange={(file) => updateMember(1, { studentIdFile: file })}
+            onUploadingChange={(uploading) => setUploadingState("member-2", uploading)}
           />
         ) : null}
 
@@ -354,18 +344,19 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
             member={formData.members[2]}
             memberIndex={2}
             onChange={(changes) => updateMember(2, changes)}
-            onFileChange={(file) => updateMemberFile(2, file)}
+            onFileChange={(file) => updateMember(2, { studentIdFile: file })}
+            onUploadingChange={(uploading) => setUploadingState("member-3", uploading)}
           />
         ) : null}
 
-        {currentStepKey === "responsible" && formData.responsible ? (
+        {currentStepKey === "responsible" ? (
           <ResponsibleStep
             errors={errors}
             onChange={(changes) =>
               setFormData((prev) => ({
                 ...prev,
                 responsible: {
-                  ...prev.responsible!,
+                  ...prev.responsible,
                   ...changes,
                 },
               }))
@@ -382,7 +373,6 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
               setFormData((prev) => ({
                 ...prev,
                 schoolImageConsentFiles: files,
-                schoolImageConsentFileNames: files.map((file) => file.name),
               }))
             }
             onToggle={(field, value) =>
@@ -391,23 +381,29 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
                 [field]: value,
               }))
             }
+            onUploadingChange={(uploading) => setUploadingState("consents", uploading)}
           />
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-csp-soft pt-4">
-          <Button disabled={!canGoBack} onClick={handlePrevious} type="button" variant="secondary">
+          <Button
+            disabled={!canGoBack || isUploadingAnyFile || submitStatus === "saving"}
+            onClick={handlePrevious}
+            type="button"
+            variant="secondary"
+          >
             Atras
           </Button>
           {!isLastStep ? (
-            <Button onClick={handleNext} type="button">
+            <Button
+              disabled={isUploadingAnyFile || submitStatus === "saving"}
+              onClick={handleNext}
+              type="button"
+            >
               Siguiente
             </Button>
           ) : (
-            <Button
-              isLoading={submitStatus === "saving" || submitStatus === "uploading"}
-              onClick={handleSubmit}
-              type="button"
-            >
+            <Button isLoading={submitStatus === "saving"} onClick={handleSubmit} type="button" disabled={isSubmitDisabled}>
               Enviar inscripcion
             </Button>
           )}

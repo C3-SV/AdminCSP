@@ -1,12 +1,11 @@
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
+import { Auth, getAuth } from "firebase/auth";
 import { Firestore, getFirestore } from "firebase/firestore";
-import { FirebaseStorage, getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
@@ -15,7 +14,6 @@ const placeholderValues = new Set([
   "tu_api_key",
   "tu-proyecto.firebaseapp.com",
   "tu-proyecto",
-  "tu-proyecto.appspot.com",
   "1234567890",
   "1:1234567890:web:abcdef123456",
 ]);
@@ -40,13 +38,10 @@ export const isFirebaseConfigured = invalidEnvKeys.length === 0;
 
 if (!isFirebaseConfigured) {
   const details: string[] = [];
-  if (missingEnvKeys.length) {
-    details.push(`faltantes: ${missingEnvKeys.join(", ")}`);
-  }
+  if (missingEnvKeys.length) details.push(`faltantes: ${missingEnvKeys.join(", ")}`);
   if (placeholderEnvKeys.length) {
     details.push(`placeholders: ${placeholderEnvKeys.join(", ")}`);
   }
-
   console.warn(
     `[Firebase] Configuracion incompleta (${details.join(" | ")}). Revisa .env.local.`,
   );
@@ -59,8 +54,6 @@ const firebaseApp: FirebaseApp | null = isFirebaseConfigured
   : null;
 
 const firestoreDb: Firestore | null = firebaseApp ? getFirestore(firebaseApp) : null;
-const firebaseStorage: FirebaseStorage | null = firebaseApp
-  ? getStorage(firebaseApp)
-  : null;
+const firebaseAuth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null;
 
-export { firebaseApp as app, firestoreDb as db, firebaseStorage as storage };
+export { firebaseApp as app, firestoreDb as db, firebaseAuth as auth };

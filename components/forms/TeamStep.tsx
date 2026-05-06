@@ -1,9 +1,9 @@
-import { DISCOVERY_SOURCE_OPTIONS } from "@/lib/constants";
-import { FieldErrors, RegistrationFormData } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { DISCOVERY_SOURCE_OPTIONS } from "@/lib/constants";
+import { FieldErrors, RegistrationFormData } from "@/lib/types";
 
 type TeamStepProps = {
   formData: RegistrationFormData;
@@ -23,7 +23,7 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
             Datos del equipo
           </h2>
           <p className="text-sm text-csp-black/70">
-            Completa la información general para iniciar la inscripción.
+            Completa la informacion general para iniciar la inscripcion.
           </p>
         </div>
         <Badge variant="accent">
@@ -39,31 +39,13 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
         value={formData.teamName}
       />
 
-      <div className="rounded-md border border-csp-primary/20 bg-csp-soft p-3">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <p className="text-sm font-semibold text-csp-primary">OmegaUp del equipo</p>
-          <Badge variant="default">Obligatorio para competir</Badge>
-        </div>
-        <Input
-          error={errors.teamOmegaUpUser}
-          id="teamOmegaUpUser"
-          label="Usuario de OmegaUp del equipo *"
-          onChange={(event) => onChange("teamOmegaUpUser", event.target.value)}
-          value={formData.teamOmegaUpUser}
-        />
-        <p className="mt-1 text-xs text-csp-black/70">
-          Usaremos este usuario para registrar y validar la participacion del equipo
-          en la plataforma de competencia.
-        </p>
-      </div>
-
       <Input
         error={errors.institution}
         id="institution"
         label={
           formData.category === "colegios"
-            ? "Colegio / institución educativa *"
-            : "Universidad / institución *"
+            ? "Colegio / institucion educativa *"
+            : "Universidad / institucion *"
         }
         onChange={(event) => onChange("institution", event.target.value)}
         value={formData.institution}
@@ -72,12 +54,12 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
       <Select
         error={errors.discoverySource}
         id="discoverySource"
-        label="¿Cómo conocieron la Copa? *"
+        label="Como conocieron la Copa? *"
         onChange={(event) =>
           onChange("discoverySource", event.target.value as RegistrationFormData["discoverySource"])
         }
         options={DISCOVERY_SOURCE_OPTIONS}
-        placeholder="Selecciona una opción"
+        placeholder="Selecciona una opcion"
         value={formData.discoverySource}
       />
 
@@ -94,11 +76,29 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
       <Textarea
         error={errors.teamDescription}
         id="teamDescription"
-        label="Descripción breve del equipo *"
+        label="Descripcion breve del equipo *"
         onChange={(event) => onChange("teamDescription", event.target.value)}
         rows={4}
         value={formData.teamDescription}
       />
+
+      <div className="rounded-md border border-csp-primary/20 bg-csp-soft p-3">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <p className="text-sm font-semibold text-csp-primary">Usuario de OmegaUp</p>
+          <Badge variant="default">Obligatorio para competir</Badge>
+        </div>
+        <Input
+          error={errors.teamOmegaUpUser}
+          id="teamOmegaUpUser"
+          label="Usuario de OmegaUp del equipo *"
+          onChange={(event) => onChange("teamOmegaUpUser", event.target.value)}
+          value={formData.teamOmegaUpUser}
+        />
+        <p className="mt-1 text-xs text-csp-black/70">
+          Usaremos este usuario para registrar y validar la participacion del equipo en la
+          plataforma de competencia.
+        </p>
+      </div>
 
       <Input
         error={errors.contactEmail}

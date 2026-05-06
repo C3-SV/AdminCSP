@@ -22,8 +22,7 @@ export function ResponsibleStep({
           Responsable institucional
         </h2>
         <p className="mt-1 text-sm text-csp-black/70">
-          Registra a la persona adulta o institucional que acompanara la
-          inscripcion del equipo.
+          Registra a la persona adulta o institucional que acompanara la inscripcion del equipo.
         </p>
       </div>
 

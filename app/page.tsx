@@ -22,19 +22,13 @@ export default function Home() {
           <h1 className="mt-5 font-display text-3xl font-semibold text-csp-primary">
             {EVENT_NAME}
           </h1>
-          <p className="mt-2 text-csp-black/70">Sitio oficial en construccion.</p>
+          <p className="mt-2 text-csp-black/70">Sitio oficial en proceso.</p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md bg-csp-blue px-5 text-sm font-semibold text-csp-white hover:bg-csp-primary"
               href="/inscripcion"
             >
               Ir a inscripcion
-            </Link>
-            <Link
-              className="inline-flex h-11 items-center justify-center rounded-md border border-csp-primary px-5 text-sm font-semibold text-csp-primary hover:bg-csp-soft"
-              href="/admin"
-            >
-              Acceso admin
             </Link>
           </div>
           <div className="mt-6 flex items-center justify-center gap-3">

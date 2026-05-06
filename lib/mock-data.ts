@@ -1,4 +1,30 @@
-import { RegistrationDocument } from "@/lib/types";
+import { RegistrationDocument, UploadedFileMetadata } from "@/lib/types";
+
+function buildStudentFile(name: string): UploadedFileMetadata {
+  return {
+    fileName: name,
+    fileSize: 1250000,
+    fileType: "application/pdf",
+    fileUrl: `https://example.com/mock/${name}`,
+    fileKey: `mock-key-${name.replaceAll(".", "-")}`,
+    uploadedAt: "2026-03-12T10:00:00.000Z",
+    purpose: "student-id",
+    provider: "uploadthing",
+  };
+}
+
+function buildConsentFile(name: string): UploadedFileMetadata {
+  return {
+    fileName: name,
+    fileSize: 980000,
+    fileType: "application/pdf",
+    fileUrl: `https://example.com/mock/${name}`,
+    fileKey: `mock-key-${name.replaceAll(".", "-")}`,
+    uploadedAt: "2026-03-12T10:00:00.000Z",
+    purpose: "image-consent",
+    provider: "uploadthing",
+  };
+}
 
 function buildMember(
   id: string,
@@ -16,14 +42,7 @@ function buildMember(
     universityYear: extra.universityYear,
     schoolGrade: extra.schoolGrade,
     about: "Participante activo en clubes de programacion.",
-    studentIdFileName: `${id}-carne.pdf`,
-    studentIdFileMetadata: {
-      fileName: `${id}-carne.pdf`,
-      fileType: "application/pdf",
-      fileSize: 150000,
-      storagePath: `registrations/mock-${id}/members/${id}-carne.pdf`,
-      downloadURL: "#",
-    },
+    studentIdFile: buildStudentFile(`carnet-${id}.pdf`),
   };
 }
 
@@ -32,10 +51,10 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     id: "mock-binary-brains",
     category: "colegios",
     teamName: "Binary Brains",
-    teamOmegaUpUser: "binarybrains_csp",
     institution: "Colegio San Francisco",
     discoverySource: "profesor",
     teamDescription: "Equipo de olimpiadas de informatica.",
+    teamOmegaUpUser: "binarybrains_sanfrancisco",
     members: [
       buildMember("member-1", "Ana Lopez", "ana@colegio.edu.sv", {
         schoolGrade: "Segundo anio de bachillerato",
@@ -61,27 +80,9 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
       dataReviewAccepted: true,
       privacyAccepted: true,
       schoolImageConsentFiles: [
-        {
-          fileName: "consentimiento-1.pdf",
-          fileType: "application/pdf",
-          fileSize: 200000,
-          downloadURL: "#",
-          storagePath: "registrations/mock-binary-brains/consents/cons-1.pdf",
-        },
-        {
-          fileName: "consentimiento-2.pdf",
-          fileType: "application/pdf",
-          fileSize: 200000,
-          downloadURL: "#",
-          storagePath: "registrations/mock-binary-brains/consents/cons-2.pdf",
-        },
-        {
-          fileName: "consentimiento-3.pdf",
-          fileType: "application/pdf",
-          fileSize: 200000,
-          downloadURL: "#",
-          storagePath: "registrations/mock-binary-brains/consents/cons-3.pdf",
-        },
+        buildConsentFile("consentimiento-1.pdf"),
+        buildConsentFile("consentimiento-2.pdf"),
+        buildConsentFile("consentimiento-3.pdf"),
       ],
     },
     status: "aprobada",
@@ -93,10 +94,10 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     id: "mock-code-ninja-u",
     category: "universidades",
     teamName: "Code Ninja U",
-    teamOmegaUpUser: "codeninja_u",
     institution: "Universidad Tecnologica",
     discoverySource: "linkedin",
     teamDescription: "Equipo universitario centrado en programacion competitiva.",
+    teamOmegaUpUser: "codeninjau_utec",
     members: [
       buildMember("member-1", "Carlos Rivera", "carlos@utec.edu.sv", {
         career: "Ingenieria en Sistemas",
@@ -111,6 +112,15 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
         universityYear: "2do anio",
       }),
     ],
+    responsible: {
+      fullName: "",
+      email: "",
+      phone: "",
+      institution: "",
+      role: "",
+      relationship: "",
+      comments: "",
+    },
     contactEmail: "club.acm@utec.edu.sv",
     consents: {
       dataReviewAccepted: true,
@@ -127,10 +137,10 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     id: "mock-logic-gate",
     category: "colegios",
     teamName: "Logic Gate",
-    teamOmegaUpUser: "logicgate_csp",
     institution: "Instituto Nacional",
     discoverySource: "institucion",
     teamDescription: "Equipo emergente con enfoque en algoritmos.",
+    teamOmegaUpUser: "logicgate_instituto",
     members: [
       buildMember("member-1", "Daniel Martinez", "daniel@instituto.edu.sv", {
         schoolGrade: "Primer anio de bachillerato",
@@ -149,32 +159,14 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
       institution: "Instituto Nacional",
       role: "docente",
       relationship: "Docente asesor del equipo",
+      comments: "",
     },
     consents: {
       dataReviewAccepted: true,
       privacyAccepted: true,
       schoolImageConsentFiles: [
-        {
-          fileName: "consentimiento-1.pdf",
-          fileType: "application/pdf",
-          fileSize: 180000,
-          downloadURL: "#",
-          storagePath: "registrations/mock-logic-gate/consents/cons-1.pdf",
-        },
-        {
-          fileName: "consentimiento-2.pdf",
-          fileType: "application/pdf",
-          fileSize: 180000,
-          downloadURL: "#",
-          storagePath: "registrations/mock-logic-gate/consents/cons-2.pdf",
-        },
-        {
-          fileName: "consentimiento-3.pdf",
-          fileType: "application/pdf",
-          fileSize: 180000,
-          downloadURL: "#",
-          storagePath: "registrations/mock-logic-gate/consents/cons-3.pdf",
-        },
+        buildConsentFile("consentimiento-a.pdf"),
+        buildConsentFile("consentimiento-b.pdf"),
       ],
     },
     status: "recibida",
@@ -186,10 +178,10 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     id: "mock-runtime-terror",
     category: "universidades",
     teamName: "Runtime Terror",
-    teamOmegaUpUser: "runtime_terror",
     institution: "Universidad de El Salvador",
     discoverySource: "omegaup",
     teamDescription: "Equipo especializado en retos de estructuras de datos.",
+    teamOmegaUpUser: "runtimeterror_ues",
     members: [
       buildMember("member-1", "Andrea Pineda", "andrea@ues.edu.sv", {
         career: "Licenciatura en Computacion",
@@ -204,6 +196,15 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
         universityYear: "4to anio",
       }),
     ],
+    responsible: {
+      fullName: "",
+      email: "",
+      phone: "",
+      institution: "",
+      role: "",
+      relationship: "",
+      comments: "",
+    },
     consents: {
       dataReviewAccepted: true,
       privacyAccepted: true,
@@ -219,10 +220,10 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     id: "mock-syntax-error",
     category: "universidades",
     teamName: "Syntax Error",
-    teamOmegaUpUser: "syntax_error_udb",
     institution: "Universidad Don Bosco",
     discoverySource: "instagram",
     teamDescription: "Equipo con interes en maratones de programacion.",
+    teamOmegaUpUser: "syntaxerror_udb",
     members: [
       buildMember("member-1", "Sofia Calderon", "sofia@udb.edu.sv", {
         career: "Ingenieria en Ciencias de la Computacion",
@@ -237,6 +238,15 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
         universityYear: "2do anio",
       }),
     ],
+    responsible: {
+      fullName: "",
+      email: "",
+      phone: "",
+      institution: "",
+      role: "",
+      relationship: "",
+      comments: "",
+    },
     consents: {
       dataReviewAccepted: true,
       privacyAccepted: true,

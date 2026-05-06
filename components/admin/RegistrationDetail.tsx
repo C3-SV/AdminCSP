@@ -16,6 +16,12 @@ type RegistrationDetailProps = {
   usingMockData: boolean;
 };
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 export function RegistrationDetail({
   registration,
   usingMockData,
@@ -27,6 +33,9 @@ export function RegistrationDetail({
     message: string;
     variant: "success" | "error" | "info";
   } | null>(null);
+
+  // TODO: Proteger esta vista con autenticacion admin antes de produccion.
+  // TODO: Revisar privacidad de archivos y uso de URLs privadas/firmadas.
 
   const handleSave = async () => {
     if (usingMockData) {
@@ -44,9 +53,7 @@ export function RegistrationDetail({
     } catch (error) {
       setToast({
         message:
-          error instanceof Error
-            ? error.message
-            : "No fue posible guardar los cambios.",
+          error instanceof Error ? error.message : "No fue posible guardar los cambios.",
         variant: "error",
       });
     } finally {
@@ -71,16 +78,20 @@ export function RegistrationDetail({
             <strong>Categoria:</strong> {registration.category}
           </p>
           <p className="text-sm">
+            <strong>Institucion:</strong> {registration.institution}
+          </p>
+          <p className="text-sm">
             <strong>OmegaUp del equipo:</strong> {registration.teamOmegaUpUser || "-"}
           </p>
           <p className="text-sm">
-            <strong>Institucion:</strong> {registration.institution}
+            <strong>Responsable:</strong>{" "}
+            {registration.category === "colegios"
+              ? registration.responsible.fullName || "-"
+              : "No aplica"}
           </p>
-          {registration.category === "colegios" ? (
-            <p className="text-sm">
-              <strong>Responsable:</strong> {registration.responsible?.fullName || "-"}
-            </p>
-          ) : null}
+          <p className="text-sm">
+            <strong>Estado:</strong> {status}
+          </p>
           <p className="text-sm">
             <strong>Fecha:</strong> {formatDate(registration.createdAt)}
           </p>
@@ -101,9 +112,6 @@ export function RegistrationDetail({
                   <strong>Correo:</strong> {member.email}
                 </p>
                 <p>
-                  <strong>Edad:</strong> {member.age}
-                </p>
-                <p>
                   <strong>WhatsApp:</strong> {member.whatsapp || "-"}
                 </p>
                 <p>
@@ -113,31 +121,39 @@ export function RegistrationDetail({
                 <p>
                   <strong>Grado escolar:</strong> {member.schoolGrade || "-"}
                 </p>
-                <p>
-                  <strong>Documento:</strong>{" "}
-                  {member.studentIdFileMetadata?.downloadURL ? (
+                {member.studentIdFile ? (
+                  <div className="mt-1 space-y-1">
+                    <p>
+                      <strong>Documento:</strong> {member.studentIdFile.fileName}
+                    </p>
+                    <p>
+                      <strong>Tamano:</strong> {formatBytes(member.studentIdFile.fileSize)}
+                    </p>
+                    <p>
+                      <strong>Provider:</strong> {member.studentIdFile.provider}
+                    </p>
                     <a
-                      className="text-csp-blue hover:underline"
-                      href={member.studentIdFileMetadata.downloadURL}
-                      rel="noreferrer"
+                      className="font-semibold text-csp-blue hover:underline"
+                      href={member.studentIdFile.fileUrl}
+                      rel="noopener noreferrer"
                       target="_blank"
                     >
-                      Abrir archivo
+                      Ver documento
                     </a>
-                  ) : (
-                    member.studentIdFileName || "No disponible"
-                  )}
-                </p>
+                  </div>
+                ) : (
+                  <p>
+                    <strong>Documento:</strong> No disponible
+                  </p>
+                )}
               </div>
             ))}
           </div>
         </Card>
 
-        {registration.category === "colegios" && registration.responsible ? (
+        {registration.category === "colegios" ? (
           <Card className="space-y-2 text-sm">
-            <h3 className="font-display text-lg font-semibold text-csp-primary">
-              Responsable
-            </h3>
+            <h3 className="font-display text-lg font-semibold text-csp-primary">Responsable</h3>
             <p>
               <strong>Nombre:</strong> {registration.responsible.fullName}
             </p>
@@ -177,27 +193,30 @@ export function RegistrationDetail({
               ? "Aceptado"
               : "No aplica / no aceptado"}
           </p>
-          {registration.consents.schoolImageConsentFiles.length ? (
-            <ul className="list-disc space-y-1 pl-5">
-              {registration.consents.schoolImageConsentFiles.map((file) => (
-                <li key={`${registration.id}-${file.fileName}`}>
-                  {file.downloadURL ? (
+          {registration.category === "colegios" ? (
+            registration.consents.schoolImageConsentFiles.length ? (
+              <ul className="list-disc space-y-1 pl-5">
+                {registration.consents.schoolImageConsentFiles.map((file) => (
+                  <li key={`${registration.id}-${file.fileKey}`}>
+                    <span className="mr-2">{file.fileName}</span>
+                    <span className="mr-2 text-csp-black/60">{formatBytes(file.fileSize)}</span>
+                    <span className="mr-2 text-csp-black/60">({file.provider})</span>
                     <a
-                      className="text-csp-blue hover:underline"
-                      href={file.downloadURL}
-                      rel="noreferrer"
+                      className="font-semibold text-csp-blue hover:underline"
+                      href={file.fileUrl}
+                      rel="noopener noreferrer"
                       target="_blank"
                     >
-                      {file.fileName}
+                      Ver documento
                     </a>
-                  ) : (
-                    file.fileName
-                  )}
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No hay archivos de consentimiento escolar.</p>
+            )
           ) : (
-            <p>No hay archivos de consentimiento escolar.</p>
+            <p>La categoria universidades usa consentimiento por checkbox.</p>
           )}
         </Card>
       </div>

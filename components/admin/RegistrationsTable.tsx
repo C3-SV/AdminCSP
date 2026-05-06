@@ -51,7 +51,9 @@ export function RegistrationsTable({ registrations }: RegistrationsTableProps) {
               <td className="px-3 py-3 capitalize">{registration.category}</td>
               <td className="px-3 py-3">{registration.institution}</td>
               <td className="px-3 py-3">
-                {registration.responsible?.fullName || "-"}
+                {registration.category === "colegios"
+                  ? registration.responsible?.fullName || "-"
+                  : "No aplica"}
               </td>
               <td className="px-3 py-3">{statusLabelMap[registration.status]}</td>
               <td className="px-3 py-3">{formatDate(registration.createdAt)}</td>

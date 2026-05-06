@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useAdminAuth } from "@/components/auth/AdminAuthProvider";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -14,9 +18,22 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAdminAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsSigningOut(true);
+    try {
+      await logout();
+      router.replace("/admin");
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
-    <aside className="hidden h-screen w-64 shrink-0 border-r border-csp-soft bg-csp-white p-4 md:flex md:flex-col">
+    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-csp-soft bg-csp-white p-4 md:w-64">
       <div className="flex items-center gap-3 border-b border-csp-soft pb-4">
         <div className="rounded-md bg-csp-primary p-1">
           <Image alt="Logo CSP" height={40} src="/brands/csp-logo-square.png" width={40} />
@@ -51,14 +68,15 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="mt-auto border-t border-csp-soft pt-4">
-        <p className="mb-2 text-xs text-csp-black/60">C3</p>
-        <Image
-          alt="Logo C3 fondo azul"
-          className="rounded-md"
-          height={44}
-          src="/brands/c3-logo-blue-bg.png"
-          width={44}
-        />
+        <Button
+          className="mb-3 w-full"
+          isLoading={isSigningOut}
+          onClick={handleLogout}
+          type="button"
+          variant="secondary"
+        >
+          Cerrar sesion
+        </Button>
       </div>
     </aside>
   );

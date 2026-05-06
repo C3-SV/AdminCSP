@@ -63,7 +63,8 @@ export default function AdminInscripcionesPage() {
         item.teamName.toLowerCase().includes(normalizedSearch) ||
         item.institution.toLowerCase().includes(normalizedSearch) ||
         item.teamOmegaUpUser.toLowerCase().includes(normalizedSearch) ||
-        item.responsible?.fullName?.toLowerCase()?.includes(normalizedSearch) ||
+        (item.category === "colegios" &&
+          item.responsible?.fullName?.toLowerCase()?.includes(normalizedSearch)) ||
         false;
       const matchesCategory = category === "all" || item.category === category;
       const matchesStatus = status === "all" || item.status === status;
@@ -106,7 +107,7 @@ export default function AdminInscripcionesPage() {
       if (registration.contactEmail) {
         emails.add(registration.contactEmail);
       }
-      if (registration.responsible?.email) {
+      if (registration.category === "colegios" && registration.responsible?.email) {
         emails.add(registration.responsible.email);
       }
       registration.members.forEach((member) => {

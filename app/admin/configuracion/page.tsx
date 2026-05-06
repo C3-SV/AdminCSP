@@ -9,6 +9,7 @@ import {
 import { firebaseConfigDiagnostics, isFirebaseConfigured } from "@/lib/firebase";
 
 export default function AdminConfiguracionPage() {
+  const uploadThingConfigured = Boolean(process.env.UPLOADTHING_TOKEN);
   const diagnosticDetails = firebaseConfigDiagnostics.invalidEnvKeys.length
     ? `Variables pendientes/placeholder: ${firebaseConfigDiagnostics.invalidEnvKeys.join(", ")}`
     : "";
@@ -51,13 +52,17 @@ export default function AdminConfiguracionPage() {
           </p>
           <p className="text-sm">
             <strong>Storage:</strong>{" "}
-            {isFirebaseConfigured ? "Listo para archivos" : "Configuración incompleta"}
+            UploadThing
           </p>
           {diagnosticDetails ? (
             <p className="rounded-md bg-csp-warning/10 px-2 py-1 text-xs text-csp-black/80">
               {diagnosticDetails}
             </p>
           ) : null}
+          <p className="text-sm">
+            <strong>UploadThing:</strong>{" "}
+            {uploadThingConfigured ? "Token detectado" : "Falta UPLOADTHING_TOKEN"}
+          </p>
         </Card>
 
         <Card className="space-y-2">
@@ -67,6 +72,10 @@ export default function AdminConfiguracionPage() {
           <p className="text-sm text-csp-black/70">Email automático</p>
           <p className="text-sm text-csp-black/70">Exportación avanzada</p>
           <p className="text-sm text-csp-black/70">Autenticación admin</p>
+          <p className="text-xs text-csp-black/60">
+            TODO: Proteger rutas admin y revisar privacidad/permisos de documentos en
+            producción.
+          </p>
         </Card>
       </div>
     </div>

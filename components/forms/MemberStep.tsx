@@ -2,8 +2,12 @@ import { Badge } from "@/components/ui/Badge";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { TEMP_DISABLE_FILE_UPLOADS } from "@/lib/constants";
-import { FieldErrors, RegistrationCategory, TeamMember } from "@/lib/types";
+import {
+  FieldErrors,
+  RegistrationCategory,
+  TeamMember,
+  UploadedFileMetadata,
+} from "@/lib/types";
 
 type MemberStepProps = {
   member: TeamMember;
@@ -11,7 +15,8 @@ type MemberStepProps = {
   category: RegistrationCategory;
   errors: FieldErrors;
   onChange: (changes: Partial<TeamMember>) => void;
-  onFileChange: (file: File | null) => void;
+  onFileChange: (file: UploadedFileMetadata | null) => void;
+  onUploadingChange: (uploading: boolean) => void;
 };
 
 export function MemberStep({
@@ -21,6 +26,7 @@ export function MemberStep({
   errors,
   onChange,
   onFileChange,
+  onUploadingChange,
 }: MemberStepProps) {
   const prefix = `members.${memberIndex}`;
 
@@ -112,16 +118,12 @@ export function MemberStep({
       />
 
       <FileUpload
+        endpoint="studentIdUploader"
         error={errors[`${prefix}.studentIdFile`]}
-        fileNames={member.studentIdFileName ? [member.studentIdFileName] : []}
-        files={member.studentIdFile ? [member.studentIdFile] : []}
-        id={`member-${memberIndex}-studentIdFile`}
-        label={
-          TEMP_DISABLE_FILE_UPLOADS
-            ? "Carne estudiantil o documento de estudiante (temporalmente opcional)"
-            : "Carne estudiantil o documento de estudiante *"
-        }
-        onChange={(files) => onFileChange(files[0] ?? null)}
+        label="Carne estudiantil o documento de estudiante *"
+        onChange={(file) => onFileChange((file as UploadedFileMetadata) ?? null)}
+        onUploadingChange={onUploadingChange}
+        value={member.studentIdFile ?? null}
       />
     </div>
   );

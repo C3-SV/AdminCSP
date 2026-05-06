@@ -8,15 +8,9 @@ function escapeCSV(value: string): string {
 }
 
 function formatDate(dateInput?: string): string {
-  if (!dateInput) {
-    return "";
-  }
-
+  if (!dateInput) return "";
   const date = new Date(dateInput);
-  if (Number.isNaN(date.getTime())) {
-    return dateInput;
-  }
-
+  if (Number.isNaN(date.getTime())) return dateInput;
   return new Intl.DateTimeFormat("es-SV", {
     year: "numeric",
     month: "2-digit",
@@ -28,16 +22,20 @@ export function exportRegistrationsToCSV(registrations: RegistrationDocument[]) 
   const headers = [
     "id",
     "equipo",
-    "categoría",
-    "institución",
+    "categoria",
+    "institucion",
     "responsable",
-    "correo responsable",
+    "correo_responsable",
     "estado",
     "fecha",
-    "omegaup equipo",
-    "miembro 1",
-    "miembro 2",
-    "miembro 3",
+    "omegaup_equipo",
+    "miembro_1",
+    "miembro_2",
+    "miembro_3",
+    "carnet_miembro_1_url",
+    "carnet_miembro_2_url",
+    "carnet_miembro_3_url",
+    "consentimientos_urls",
   ];
 
   const rows = registrations.map((registration) => [
@@ -45,14 +43,20 @@ export function exportRegistrationsToCSV(registrations: RegistrationDocument[]) 
     registration.teamName,
     registration.category,
     registration.institution,
-    registration.responsible?.fullName ?? "",
-    registration.responsible?.email ?? "",
+    registration.category === "colegios" ? registration.responsible.fullName : "",
+    registration.category === "colegios" ? registration.responsible.email : "",
     registration.status,
     formatDate(registration.createdAt),
     registration.teamOmegaUpUser ?? "",
     registration.members[0]?.fullName ?? "",
     registration.members[1]?.fullName ?? "",
     registration.members[2]?.fullName ?? "",
+    registration.members[0]?.studentIdFile?.fileUrl ?? "",
+    registration.members[1]?.studentIdFile?.fileUrl ?? "",
+    registration.members[2]?.studentIdFile?.fileUrl ?? "",
+    (registration.consents.schoolImageConsentFiles ?? [])
+      .map((file) => file.fileUrl)
+      .join(" | "),
   ]);
 
   const csvContent = [

@@ -1,8 +1,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { FileUpload } from "@/components/ui/FileUpload";
-import { TEMP_DISABLE_FILE_UPLOADS } from "@/lib/constants";
-import { FieldErrors, RegistrationFormData } from "@/lib/types";
+import { FieldErrors, RegistrationFormData, UploadedFileMetadata } from "@/lib/types";
 
 type ConfirmationStepProps = {
   formData: RegistrationFormData;
@@ -14,7 +13,8 @@ type ConfirmationStepProps = {
       | "universityImageConsentAccepted",
     value: boolean,
   ) => void;
-  onSchoolConsentFilesChange: (files: File[]) => void;
+  onSchoolConsentFilesChange: (files: UploadedFileMetadata[]) => void;
+  onUploadingChange: (uploading: boolean) => void;
 };
 
 function orDash(value?: string) {
@@ -26,6 +26,7 @@ export function ConfirmationStep({
   errors,
   onToggle,
   onSchoolConsentFilesChange,
+  onUploadingChange,
 }: ConfirmationStepProps) {
   return (
     <div className="space-y-4">
@@ -43,13 +44,13 @@ export function ConfirmationStep({
           <strong>Institucion:</strong> {orDash(formData.institution)}
         </p>
         <p className="text-sm">
-          <strong>OmegaUp del equipo:</strong> {orDash(formData.teamOmegaUpUser)}
-        </p>
-        <p className="text-sm">
           <strong>Fuente:</strong> {orDash(formData.discoverySource)}
         </p>
         <p className="text-sm">
           <strong>Descripcion:</strong> {orDash(formData.teamDescription)}
+        </p>
+        <p className="text-sm">
+          <strong>Usuario de OmegaUp:</strong> {orDash(formData.teamOmegaUpUser)}
         </p>
         <p className="text-sm">
           <strong>Correo principal:</strong> {orDash(formData.contactEmail)}
@@ -87,17 +88,15 @@ export function ConfirmationStep({
                 : orDash(member.schoolGrade)}
             </p>
             <p>
-              <strong>Documento:</strong> {member.studentIdFile?.name || member.studentIdFileName || "No adjunto"}
+              <strong>Documento:</strong> {member.studentIdFile?.fileName ?? "No adjunto"}
             </p>
           </div>
         ))}
       </Card>
 
-      {formData.category === "colegios" && formData.responsible ? (
+      {formData.category === "colegios" ? (
         <Card className="space-y-2">
-          <h3 className="font-display text-lg font-semibold text-csp-primary">
-            Responsable institucional
-          </h3>
+          <h3 className="font-display text-lg font-semibold text-csp-primary">Responsable</h3>
           <p className="text-sm">
             <strong>Nombre:</strong> {orDash(formData.responsible.fullName)}
           </p>
@@ -132,8 +131,8 @@ export function ConfirmationStep({
             type="checkbox"
           />
           <span>
-            He revisado que la informacion ingresada es correcta y confirmo que
-            todos los integrantes cumplen con las bases de la competencia.
+            He revisado que la informacion ingresada es correcta y confirmo que todos los
+            integrantes cumplen con las bases de la competencia.
           </span>
         </label>
         {errors.dataReviewAccepted ? <p className="form-error">{errors.dataReviewAccepted}</p> : null}
@@ -146,8 +145,8 @@ export function ConfirmationStep({
             type="checkbox"
           />
           <span>
-            Acepto el tratamiento de los datos personales para fines relacionados
-            con la Copa Salvadorena de Programacion 2026.
+            Acepto el tratamiento de los datos personales para fines relacionados con la
+            Copa Salvadorena de Programacion 2026.
           </span>
         </label>
         {errors.privacyAccepted ? <p className="form-error">{errors.privacyAccepted}</p> : null}
@@ -164,9 +163,9 @@ export function ConfirmationStep({
                 type="checkbox"
               />
               <span>
-                Acepto el uso de imagen, nombre de equipo y afiliacion institucional
-                en fotografias, transmisiones y material oficial de la Copa
-                Salvadorena de Programacion 2026.
+                Acepto el uso de imagen, nombre de equipo y afiliacion institucional en
+                fotografias, transmisiones y material oficial de la Copa Salvadorena de
+                Programacion 2026.
               </span>
             </label>
             {errors.universityImageConsentAccepted ? (
@@ -175,22 +174,14 @@ export function ConfirmationStep({
           </>
         ) : (
           <FileUpload
-            description={
-              TEMP_DISABLE_FILE_UPLOADS
-                ? "Carga desactivada temporalmente para pruebas sin Storage. Podras reactivarla luego."
-                : "Adjunta los consentimientos de uso de imagen firmados por los responsables correspondientes de cada estudiante."
-            }
+            description="Adjunta los consentimientos de uso de imagen firmados por los responsables correspondientes de cada estudiante."
+            endpoint="consentUploader"
             error={errors.schoolImageConsentFiles}
-            fileNames={formData.schoolImageConsentFileNames ?? []}
-            files={formData.schoolImageConsentFiles ?? []}
-            id="schoolImageConsentFiles"
-            label={
-              TEMP_DISABLE_FILE_UPLOADS
-                ? "Consentimientos de uso de imagen (temporalmente opcional)"
-                : "Consentimientos de uso de imagen *"
-            }
+            label="Consentimientos de uso de imagen *"
             multiple
-            onChange={onSchoolConsentFilesChange}
+            onChange={(files) => onSchoolConsentFilesChange((files as UploadedFileMetadata[]) ?? [])}
+            onUploadingChange={onUploadingChange}
+            value={formData.schoolImageConsentFiles ?? []}
           />
         )}
       </Card>
