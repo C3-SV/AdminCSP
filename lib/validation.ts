@@ -37,8 +37,11 @@ function validateMemberCore(
   const errors: FieldErrors = {};
   const prefix = `members.${memberIndex}`;
 
-  if (!member.fullName.trim()) {
-    errors[`${prefix}.fullName`] = "El nombre completo es obligatorio.";
+  if (!member.firstName.trim()) {
+    errors[`${prefix}.firstName`] = "El nombre es obligatorio.";
+  }
+  if (!member.lastName.trim()) {
+    errors[`${prefix}.lastName`] = "El apellido es obligatorio.";
   }
   if (!validateAge(member.age)) {
     errors[`${prefix}.age`] = "Ingresa una edad valida.";
@@ -103,8 +106,11 @@ export function validateResponsibleStep(formData: RegistrationFormData): FieldEr
   const errors: FieldErrors = {};
   const responsible = formData.responsible;
 
-  if (!responsible.fullName.trim()) {
-    errors["responsible.fullName"] = "El nombre es obligatorio.";
+  if (!responsible.firstName.trim()) {
+    errors["responsible.firstName"] = "El nombre es obligatorio.";
+  }
+  if (!responsible.lastName.trim()) {
+    errors["responsible.lastName"] = "El apellido es obligatorio.";
   }
   if (!validateEmail(responsible.email)) {
     errors["responsible.email"] = "Ingresa un correo valido.";

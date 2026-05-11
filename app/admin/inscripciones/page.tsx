@@ -11,6 +11,7 @@ import { exportRegistrationsToCSV } from "@/lib/csv";
 import { getRegistrations } from "@/lib/firebase-registrations";
 import { RegistrationDocument, RegistrationStatus } from "@/lib/types";
 import { countByStatus } from "@/lib/admin-utils";
+import { formatPersonName } from "@/lib/utils";
 
 function isSameDate(dateISO: string | undefined, dateFilter: string) {
   if (!dateISO || !dateFilter) {
@@ -64,7 +65,9 @@ export default function AdminInscripcionesPage() {
         item.institution.toLowerCase().includes(normalizedSearch) ||
         item.teamOmegaUpUser.toLowerCase().includes(normalizedSearch) ||
         (item.category === "colegios" &&
-          item.responsible?.fullName?.toLowerCase()?.includes(normalizedSearch)) ||
+          formatPersonName(item.responsible?.firstName, item.responsible?.lastName)
+            .toLowerCase()
+            .includes(normalizedSearch)) ||
         false;
       const matchesCategory = category === "all" || item.category === category;
       const matchesStatus = status === "all" || item.status === status;

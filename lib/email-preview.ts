@@ -1,11 +1,14 @@
 import { EVENT_NAME } from "@/lib/constants";
 import { RegistrationFormData } from "@/lib/types";
+import { formatPersonName } from "@/lib/utils";
 
 export function buildRegistrationEmailPayload(
   formData: RegistrationFormData,
   registrationId: string,
 ) {
-  const memberNames = formData.members.map((member) => member.fullName.trim());
+  const memberNames = formData.members.map((member) =>
+    formatPersonName(member.firstName, member.lastName),
+  );
   const omegaUpUsers = [formData.teamOmegaUpUser.trim()].filter(Boolean);
   const documentsSummary = {
     studentIds: formData.members.map((member) => ({
@@ -40,7 +43,8 @@ export function buildRegistrationEmailPayload(
     responsible:
       formData.category === "colegios"
         ? {
-            fullName: formData.responsible.fullName,
+            firstName: formData.responsible.firstName,
+            lastName: formData.responsible.lastName,
             email: formData.responsible.email,
             phone: formData.responsible.phone,
             role: formData.responsible.role,

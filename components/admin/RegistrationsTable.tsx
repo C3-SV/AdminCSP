@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RegistrationDocument } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatPersonName } from "@/lib/utils";
 
 const statusLabelMap: Record<RegistrationDocument["status"], string> = {
   recibida: "Recibida",
@@ -52,7 +52,10 @@ export function RegistrationsTable({ registrations }: RegistrationsTableProps) {
               <td className="px-3 py-3">{registration.institution}</td>
               <td className="px-3 py-3">
                 {registration.category === "colegios"
-                  ? registration.responsible?.fullName || "-"
+                  ? formatPersonName(
+                      registration.responsible?.firstName,
+                      registration.responsible?.lastName,
+                    ) || "-"
                   : "No aplica"}
               </td>
               <td className="px-3 py-3">{statusLabelMap[registration.status]}</td>

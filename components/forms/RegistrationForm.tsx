@@ -46,7 +46,8 @@ const STEP_LABELS: Record<RegistrationStepKey, string> = {
 function createEmptyMember(id: string): TeamMember {
   return {
     id,
-    fullName: "",
+    firstName: "",
+    lastName: "",
     age: "",
     email: "",
     whatsapp: "",
@@ -54,6 +55,7 @@ function createEmptyMember(id: string): TeamMember {
     universityYear: "",
     schoolGrade: "",
     about: "",
+    linkedin: "",
     studentIdFile: null,
   };
 }
@@ -74,7 +76,8 @@ function createInitialFormData(category: RegistrationCategory): RegistrationForm
       createEmptyMember("member-3"),
     ],
     responsible: {
-      fullName: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       institution: "",

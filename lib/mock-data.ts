@@ -28,19 +28,22 @@ function buildConsentFile(name: string): UploadedFileMetadata {
 
 function buildMember(
   id: string,
-  fullName: string,
+  firstName: string,
+  lastName: string,
   email: string,
-  extra: { career?: string; universityYear?: string; schoolGrade?: string },
+  extra: { career?: string; universityYear?: string; schoolGrade?: string; linkedin?: string },
 ) {
   return {
     id,
-    fullName,
+    firstName,
+    lastName,
     age: 17,
     email,
     whatsapp: "+503 7000-0000",
     career: extra.career,
     universityYear: extra.universityYear,
     schoolGrade: extra.schoolGrade,
+    linkedin: extra.linkedin,
     about: "Participante activo en clubes de programacion.",
     studentIdFile: buildStudentFile(`carnet-${id}.pdf`),
   };
@@ -56,18 +59,19 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     teamDescription: "Equipo de olimpiadas de informatica.",
     teamOmegaUpUser: "binarybrains_sanfrancisco",
     members: [
-      buildMember("member-1", "Ana Lopez", "ana@colegio.edu.sv", {
+      buildMember("member-1", "Ana", "Lopez", "ana@colegio.edu.sv", {
         schoolGrade: "Segundo anio de bachillerato",
       }),
-      buildMember("member-2", "Jose Perez", "jose@colegio.edu.sv", {
+      buildMember("member-2", "Jose", "Perez", "jose@colegio.edu.sv", {
         schoolGrade: "Segundo anio de bachillerato",
       }),
-      buildMember("member-3", "Maria Hernandez", "maria@colegio.edu.sv", {
+      buildMember("member-3", "Maria", "Hernandez", "maria@colegio.edu.sv", {
         schoolGrade: "Primer anio de bachillerato",
       }),
     ],
     responsible: {
-      fullName: "Lic. Claudia Molina",
+      firstName: "Lic. Claudia",
+      lastName: "Molina",
       email: "claudia.molina@colegio.edu.sv",
       phone: "+503 7100-0001",
       institution: "Colegio San Francisco",
@@ -99,21 +103,24 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     teamDescription: "Equipo universitario centrado en programacion competitiva.",
     teamOmegaUpUser: "codeninjau_utec",
     members: [
-      buildMember("member-1", "Carlos Rivera", "carlos@utec.edu.sv", {
+      buildMember("member-1", "Carlos", "Rivera", "carlos@utec.edu.sv", {
         career: "Ingenieria en Sistemas",
         universityYear: "4to anio",
+        linkedin: "https://www.linkedin.com/in/carlos-rivera-utec",
       }),
-      buildMember("member-2", "Lucia Chavez", "lucia@utec.edu.sv", {
+      buildMember("member-2", "Lucia", "Chavez", "lucia@utec.edu.sv", {
         career: "Ingenieria en Sistemas",
         universityYear: "3er anio",
+        linkedin: "https://www.linkedin.com/in/lucia-chavez-utec",
       }),
-      buildMember("member-3", "Kevin Ramos", "kevin@utec.edu.sv", {
+      buildMember("member-3", "Kevin", "Ramos", "kevin@utec.edu.sv", {
         career: "Ingenieria en Software",
         universityYear: "2do anio",
       }),
     ],
     responsible: {
-      fullName: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       institution: "",
@@ -142,18 +149,19 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     teamDescription: "Equipo emergente con enfoque en algoritmos.",
     teamOmegaUpUser: "logicgate_instituto",
     members: [
-      buildMember("member-1", "Daniel Martinez", "daniel@instituto.edu.sv", {
+      buildMember("member-1", "Daniel", "Martinez", "daniel@instituto.edu.sv", {
         schoolGrade: "Primer anio de bachillerato",
       }),
-      buildMember("member-2", "Fernanda Diaz", "fernanda@instituto.edu.sv", {
+      buildMember("member-2", "Fernanda", "Diaz", "fernanda@instituto.edu.sv", {
         schoolGrade: "Primer anio de bachillerato",
       }),
-      buildMember("member-3", "Ricardo Torres", "ricardo@instituto.edu.sv", {
+      buildMember("member-3", "Ricardo", "Torres", "ricardo@instituto.edu.sv", {
         schoolGrade: "Segundo anio de bachillerato",
       }),
     ],
     responsible: {
-      fullName: "Prof. Mario Aguilar",
+      firstName: "Prof. Mario",
+      lastName: "Aguilar",
       email: "mario.aguilar@instituto.edu.sv",
       phone: "+503 7100-0003",
       institution: "Instituto Nacional",
@@ -183,21 +191,23 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     teamDescription: "Equipo especializado en retos de estructuras de datos.",
     teamOmegaUpUser: "runtimeterror_ues",
     members: [
-      buildMember("member-1", "Andrea Pineda", "andrea@ues.edu.sv", {
+      buildMember("member-1", "Andrea", "Pineda", "andrea@ues.edu.sv", {
         career: "Licenciatura en Computacion",
         universityYear: "5to anio",
+        linkedin: "https://www.linkedin.com/in/andrea-pineda-ues",
       }),
-      buildMember("member-2", "Javier Moreno", "javier@ues.edu.sv", {
+      buildMember("member-2", "Javier", "Moreno", "javier@ues.edu.sv", {
         career: "Ingenieria en Sistemas",
         universityYear: "4to anio",
       }),
-      buildMember("member-3", "Paola Ruiz", "paola@ues.edu.sv", {
+      buildMember("member-3", "Paola", "Ruiz", "paola@ues.edu.sv", {
         career: "Ingenieria en Sistemas",
         universityYear: "4to anio",
       }),
     ],
     responsible: {
-      fullName: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       institution: "",
@@ -225,21 +235,23 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     teamDescription: "Equipo con interes en maratones de programacion.",
     teamOmegaUpUser: "syntaxerror_udb",
     members: [
-      buildMember("member-1", "Sofia Calderon", "sofia@udb.edu.sv", {
+      buildMember("member-1", "Sofia", "Calderon", "sofia@udb.edu.sv", {
         career: "Ingenieria en Ciencias de la Computacion",
         universityYear: "3er anio",
+        linkedin: "https://www.linkedin.com/in/sofia-calderon-udb",
       }),
-      buildMember("member-2", "Miguel Lopez", "miguel@udb.edu.sv", {
+      buildMember("member-2", "Miguel", "Lopez", "miguel@udb.edu.sv", {
         career: "Ingenieria en Sistemas",
         universityYear: "2do anio",
       }),
-      buildMember("member-3", "Valeria Molina", "valeria@udb.edu.sv", {
+      buildMember("member-3", "Valeria", "Molina", "valeria@udb.edu.sv", {
         career: "Ingenieria en Software",
         universityYear: "2do anio",
       }),
     ],
     responsible: {
-      fullName: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       institution: "",

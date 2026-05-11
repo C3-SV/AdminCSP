@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { FieldErrors, RegistrationFormData, UploadedFileMetadata } from "@/lib/types";
+import { formatPersonName } from "@/lib/utils";
 
 type ConfirmationStepProps = {
   formData: RegistrationFormData;
@@ -68,10 +69,14 @@ export function ConfirmationStep({
           <div key={member.id} className="rounded-md border border-csp-soft p-3 text-sm">
             <div className="mb-1 flex items-center gap-2">
               <p className="font-medium text-csp-primary">
-                Miembro {index + 1}: {orDash(member.fullName)}
+                Miembro {index + 1}: {orDash(formatPersonName(member.firstName, member.lastName))}
               </p>
               {index === 0 ? <Badge>Capitan</Badge> : null}
             </div>
+            <p>
+              <strong>Nombre:</strong>{" "}
+              {orDash(formatPersonName(member.firstName, member.lastName))}
+            </p>
             <p>
               <strong>Correo:</strong> {orDash(member.email)}
             </p>
@@ -87,6 +92,11 @@ export function ConfirmationStep({
                 ? `${orDash(member.career)} / ${orDash(member.universityYear)}`
                 : orDash(member.schoolGrade)}
             </p>
+            {formData.category === "universidades" ? (
+              <p>
+                <strong>LinkedIn:</strong> {orDash(member.linkedin)}
+              </p>
+            ) : null}
             <p>
               <strong>Documento:</strong> {member.studentIdFile?.fileName ?? "No adjunto"}
             </p>
@@ -98,7 +108,13 @@ export function ConfirmationStep({
         <Card className="space-y-2">
           <h3 className="font-display text-lg font-semibold text-csp-primary">Responsable</h3>
           <p className="text-sm">
-            <strong>Nombre:</strong> {orDash(formData.responsible.fullName)}
+            <strong>Nombre:</strong>{" "}
+            {orDash(
+              formatPersonName(
+                formData.responsible.firstName,
+                formData.responsible.lastName,
+              ),
+            )}
           </p>
           <p className="text-sm">
             <strong>Correo:</strong> {orDash(formData.responsible.email)}

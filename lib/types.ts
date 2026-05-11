@@ -33,7 +33,8 @@ export type UploadedFileMetadata = {
 
 export type TeamMember = {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   age: number | "";
   email: string;
   whatsapp?: string;
@@ -41,6 +42,7 @@ export type TeamMember = {
   universityYear?: string;
   schoolGrade?: string;
   about?: string;
+  linkedin?: string;
   studentIdFile?: UploadedFileMetadata | null;
 };
 
@@ -57,7 +59,8 @@ export type ResponsibleRole =
   | "otro";
 
 export type Responsible = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   institution: string;

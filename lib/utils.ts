@@ -18,3 +18,7 @@ export function formatDate(dateInput?: string) {
     year: "numeric",
   }).format(date);
 }
+
+export function formatPersonName(firstName?: string, lastName?: string) {
+  return `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim();
+}

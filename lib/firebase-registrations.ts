@@ -55,9 +55,11 @@ function mapUploadthingMetadata(value: unknown): UploadedFileMetadata | undefine
 function emptyMember(index: number): RegistrationDocumentMember {
   return {
     id: `member-${index + 1}`,
-    fullName: "",
+    firstName: "",
+    lastName: "",
     age: 0,
     email: "",
+    linkedin: "",
     studentIdFile: null,
   };
 }
@@ -75,7 +77,8 @@ function mapRegistrationFromFirestore(
 
       return {
         id: typeof item.id === "string" && item.id ? item.id : `member-${index + 1}`,
-        fullName: String(item.fullName ?? ""),
+        firstName: String(item.firstName ?? ""),
+        lastName: String(item.lastName ?? ""),
         age: Number.isFinite(ageNumber) ? ageNumber : 0,
         email: String(item.email ?? ""),
         whatsapp: typeof item.whatsapp === "string" ? item.whatsapp : undefined,
@@ -84,6 +87,7 @@ function mapRegistrationFromFirestore(
           typeof item.universityYear === "string" ? item.universityYear : undefined,
         schoolGrade: typeof item.schoolGrade === "string" ? item.schoolGrade : undefined,
         about: typeof item.about === "string" ? item.about : undefined,
+        linkedin: typeof item.linkedin === "string" ? item.linkedin : undefined,
         studentIdFile: mapUploadthingMetadata(item.studentIdFile) ?? null,
       };
     });
@@ -116,7 +120,8 @@ function mapRegistrationFromFirestore(
     contactEmail: typeof data.contactEmail === "string" ? data.contactEmail : undefined,
     members: members as RegistrationDocument["members"],
     responsible: {
-      fullName: String((data.responsible as Record<string, unknown>)?.fullName ?? ""),
+      firstName: String((data.responsible as Record<string, unknown>)?.firstName ?? ""),
+      lastName: String((data.responsible as Record<string, unknown>)?.lastName ?? ""),
       email: String((data.responsible as Record<string, unknown>)?.email ?? ""),
       phone: String((data.responsible as Record<string, unknown>)?.phone ?? ""),
       institution: String((data.responsible as Record<string, unknown>)?.institution ?? ""),
@@ -178,7 +183,8 @@ export async function createRegistration(formData: RegistrationFormData): Promis
     contactEmail: formData.contactEmail ?? "",
     members: formData.members.map((member) => ({
       id: member.id,
-      fullName: member.fullName,
+      firstName: member.firstName,
+      lastName: member.lastName,
       age: Number(member.age),
       email: member.email,
       whatsapp: member.whatsapp ?? "",
@@ -186,12 +192,14 @@ export async function createRegistration(formData: RegistrationFormData): Promis
       universityYear: member.universityYear ?? "",
       schoolGrade: member.schoolGrade ?? "",
       about: member.about ?? "",
+      linkedin: member.linkedin ?? "",
       studentIdFile: member.studentIdFile ?? null,
     })),
     responsible:
       formData.category === "colegios"
         ? {
-            fullName: formData.responsible.fullName,
+            firstName: formData.responsible.firstName,
+            lastName: formData.responsible.lastName,
             email: formData.responsible.email,
             phone: formData.responsible.phone,
             institution: formData.responsible.institution,

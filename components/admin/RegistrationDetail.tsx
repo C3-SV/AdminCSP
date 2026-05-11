@@ -4,7 +4,7 @@ import { useState } from "react";
 import { REGISTRATION_STATUS_OPTIONS } from "@/lib/constants";
 import { updateRegistrationStatus } from "@/lib/firebase-registrations";
 import { RegistrationDocument, RegistrationStatus } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatPersonName } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
@@ -86,7 +86,10 @@ export function RegistrationDetail({
           <p className="text-sm">
             <strong>Responsable:</strong>{" "}
             {registration.category === "colegios"
-              ? registration.responsible.fullName || "-"
+              ? formatPersonName(
+                  registration.responsible.firstName,
+                  registration.responsible.lastName,
+                ) || "-"
               : "No aplica"}
           </p>
           <p className="text-sm">
@@ -106,7 +109,11 @@ export function RegistrationDetail({
                 className="rounded-md border border-csp-soft p-3 text-sm"
               >
                 <p className="font-semibold text-csp-primary">
-                  Miembro {index + 1}: {member.fullName}
+                  Miembro {index + 1}: {formatPersonName(member.firstName, member.lastName) || "-"}
+                </p>
+                <p>
+                  <strong>Nombre:</strong>{" "}
+                  {formatPersonName(member.firstName, member.lastName) || "-"}
                 </p>
                 <p>
                   <strong>Correo:</strong> {member.email}
@@ -121,6 +128,11 @@ export function RegistrationDetail({
                 <p>
                   <strong>Grado escolar:</strong> {member.schoolGrade || "-"}
                 </p>
+                {registration.category === "universidades" ? (
+                  <p>
+                    <strong>LinkedIn:</strong> {member.linkedin || "-"}
+                  </p>
+                ) : null}
                 {member.studentIdFile ? (
                   <div className="mt-1 space-y-1">
                     <p>
@@ -155,7 +167,11 @@ export function RegistrationDetail({
           <Card className="space-y-2 text-sm">
             <h3 className="font-display text-lg font-semibold text-csp-primary">Responsable</h3>
             <p>
-              <strong>Nombre:</strong> {registration.responsible.fullName}
+              <strong>Nombre:</strong>{" "}
+              {formatPersonName(
+                registration.responsible.firstName,
+                registration.responsible.lastName,
+              ) || "-"}
             </p>
             <p>
               <strong>Correo:</strong> {registration.responsible.email}

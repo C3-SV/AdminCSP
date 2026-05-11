@@ -26,13 +26,22 @@ export function ResponsibleStep({
         </p>
       </div>
 
-      <Input
-        error={errors["responsible.fullName"]}
-        id="responsible-fullName"
-        label="Nombre completo *"
-        onChange={(event) => onChange({ fullName: event.target.value })}
-        value={responsible.fullName}
-      />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input
+          error={errors["responsible.firstName"]}
+          id="responsible-firstName"
+          label="Nombre *"
+          onChange={(event) => onChange({ firstName: event.target.value })}
+          value={responsible.firstName}
+        />
+        <Input
+          error={errors["responsible.lastName"]}
+          id="responsible-lastName"
+          label="Apellido *"
+          onChange={(event) => onChange({ lastName: event.target.value })}
+          value={responsible.lastName}
+        />
+      </div>
       <Input
         error={errors["responsible.email"]}
         id="responsible-email"

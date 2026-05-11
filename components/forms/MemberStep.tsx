@@ -44,13 +44,22 @@ export function MemberStep({
         </p>
       </div>
 
-      <Input
-        error={errors[`${prefix}.fullName`]}
-        id={`member-${memberIndex}-fullName`}
-        label="Nombre completo *"
-        onChange={(event) => onChange({ fullName: event.target.value })}
-        value={member.fullName}
-      />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input
+          error={errors[`${prefix}.firstName`]}
+          id={`member-${memberIndex}-firstName`}
+          label="Nombre *"
+          onChange={(event) => onChange({ firstName: event.target.value })}
+          value={member.firstName}
+        />
+        <Input
+          error={errors[`${prefix}.lastName`]}
+          id={`member-${memberIndex}-lastName`}
+          label="Apellido *"
+          onChange={(event) => onChange({ lastName: event.target.value })}
+          value={member.lastName}
+        />
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Input
@@ -83,20 +92,30 @@ export function MemberStep({
       />
 
       {category === "universidades" ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              error={errors[`${prefix}.career`]}
+              id={`member-${memberIndex}-career`}
+              label="Carrera *"
+              onChange={(event) => onChange({ career: event.target.value })}
+              value={member.career ?? ""}
+            />
+            <Input
+              error={errors[`${prefix}.universityYear`]}
+              id={`member-${memberIndex}-universityYear`}
+              label="Anio de estudio *"
+              onChange={(event) => onChange({ universityYear: event.target.value })}
+              value={member.universityYear ?? ""}
+            />
+          </div>
           <Input
-            error={errors[`${prefix}.career`]}
-            id={`member-${memberIndex}-career`}
-            label="Carrera *"
-            onChange={(event) => onChange({ career: event.target.value })}
-            value={member.career ?? ""}
-          />
-          <Input
-            error={errors[`${prefix}.universityYear`]}
-            id={`member-${memberIndex}-universityYear`}
-            label="Anio de estudio *"
-            onChange={(event) => onChange({ universityYear: event.target.value })}
-            value={member.universityYear ?? ""}
+            id={`member-${memberIndex}-linkedin`}
+            label="LinkedIn (opcional)"
+            onChange={(event) => onChange({ linkedin: event.target.value })}
+            placeholder="https://www.linkedin.com/in/tu-perfil"
+            type="url"
+            value={member.linkedin ?? ""}
           />
         </div>
       ) : (
