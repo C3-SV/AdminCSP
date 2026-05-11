@@ -40,7 +40,7 @@ const STEP_LABELS: Record<RegistrationStepKey, string> = {
   "member-2": "Miembro 2",
   "member-3": "Miembro 3",
   responsible: "Responsable",
-  confirmation: "Confirmacion",
+  confirmation: "Confirmación",
 };
 
 function createEmptyMember(id: string): TeamMember {
@@ -148,6 +148,11 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepStates, setStepStates] = useState<StepState[]>(() => stepKeys.map(() => "default"));
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const [attemptedSteps, setAttemptedSteps] = useState<
+    Partial<Record<RegistrationStepKey, boolean>>
+  >({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [submitError, setSubmitError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
@@ -158,6 +163,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
   const canGoBack = currentStepIndex > 0;
   const isLastStep = currentStepIndex === stepKeys.length - 1;
   const isUploadingAnyFile = Object.values(activeUploads).some(Boolean);
+  const showAllCurrentStepErrors = submitAttempted || Boolean(attemptedSteps[currentStepKey]);
 
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
@@ -170,7 +176,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
       const parsed = parseDraft(rawDraft, category);
       if (parsed) {
         setFormData(parsed);
-        setToastMessage("Se restauro un borrador.");
+        setToastMessage("Se restauró un borrador.");
       }
       setIsDraftReady(true);
     }, 0);
@@ -191,12 +197,22 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
 
   const submitStatusText =
     submitStatus === "saving"
-      ? "Guardando inscripcion..."
+      ? "Guardando inscripción..."
       : submitStatus === "success"
-        ? "Inscripcion enviada"
+        ? "Inscripción enviada"
         : isUploadingAnyFile
           ? "Subiendo archivo..."
           : "";
+
+  const visibleErrors = useMemo(() => {
+    if (!Object.keys(errors).length) return {};
+
+    return Object.fromEntries(
+      Object.entries(errors).filter(([fieldPath]) =>
+        showAllCurrentStepErrors ? true : Boolean(touchedFields[fieldPath]),
+      ),
+    );
+  }, [errors, showAllCurrentStepErrors, touchedFields]);
 
   const setStepStateByValidation = (index: number, stepErrors: FieldErrors) => {
     setStepStates((prev) => {
@@ -211,6 +227,16 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
     const stepErrors = validateStepByKey(formData, stepKey);
     setStepStateByValidation(index, stepErrors);
     return stepErrors;
+  };
+
+  const markFieldTouched = (fieldPath: string) => {
+    setTouchedFields((prev) => (prev[fieldPath] ? prev : { ...prev, [fieldPath]: true }));
+  };
+
+  const handleFieldBlur = (fieldPath: string) => {
+    markFieldTouched(fieldPath);
+    const stepErrors = validateAndMarkStep(currentStepIndex);
+    setErrors(stepErrors);
   };
 
   const updateFormField = <K extends keyof RegistrationFormData>(
@@ -241,8 +267,11 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
 
   const handleNext = () => {
     if (isUploadingAnyFile || submitStatus === "saving") return;
+    setAttemptedSteps((prev) => ({ ...prev, [currentStepKey]: true }));
     const stepErrors = validateAndMarkStep(currentStepIndex);
     setErrors(stepErrors);
+    if (Object.keys(stepErrors).length > 0) return;
+
     setCurrentStepIndex((prev) => Math.min(prev + 1, stepKeys.length - 1));
   };
 
@@ -252,11 +281,17 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  const hasBlockingErrors = Object.keys(validateAllSteps(formData)).length > 0;
-  const isSubmitDisabled = isUploadingAnyFile || submitStatus === "saving" || hasBlockingErrors;
+  const isSubmitDisabled = isUploadingAnyFile || submitStatus === "saving";
 
   const handleSubmit = async () => {
     if (isUploadingAnyFile) return;
+    setSubmitAttempted(true);
+    setAttemptedSteps(
+      stepKeys.reduce(
+        (acc, key) => ({ ...acc, [key]: true }),
+        {} as Partial<Record<RegistrationStepKey, boolean>>,
+      ),
+    );
 
     const allErrors = validateAllSteps(formData);
     const nextStates = stepKeys.map((stepKey) =>
@@ -267,6 +302,13 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
 
     if (Object.keys(allErrors).length > 0) {
       setSubmitError("Hay campos pendientes por corregir antes de enviar.");
+      const Swal = (await import("sweetalert2")).default;
+      await Swal.fire({
+        title: "Revisa algunos campos",
+        text: "Hay información que falta o necesita corregirse. Te marcamos los campos para que puedas revisarlos.",
+        confirmButtonText: "Entendido",
+        icon: "warning",
+      });
       return;
     }
 
@@ -285,7 +327,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
       router.push(`/inscripcion/exito?id=${registrationId}`);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "No fue posible enviar la inscripcion.",
+        error instanceof Error ? error.message : "No fue posible enviar la inscripción.",
       );
       setSubmitStatus("idle");
     }
@@ -313,16 +355,22 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
         ) : null}
 
         {currentStepKey === "team" ? (
-          <TeamStep errors={errors} formData={formData} onChange={updateFormField} />
+          <TeamStep
+            errors={visibleErrors}
+            formData={formData}
+            onChange={updateFormField}
+            onFieldBlur={handleFieldBlur}
+          />
         ) : null}
 
         {currentStepKey === "member-1" ? (
           <MemberStep
             category={formData.category}
-            errors={errors}
+            errors={visibleErrors}
             member={formData.members[0]}
             memberIndex={0}
             onChange={(changes) => updateMember(0, changes)}
+            onFieldBlur={handleFieldBlur}
             onFileChange={(file) => updateMember(0, { studentIdFile: file })}
             onUploadingChange={(uploading) => setUploadingState("member-1", uploading)}
           />
@@ -331,10 +379,11 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
         {currentStepKey === "member-2" ? (
           <MemberStep
             category={formData.category}
-            errors={errors}
+            errors={visibleErrors}
             member={formData.members[1]}
             memberIndex={1}
             onChange={(changes) => updateMember(1, changes)}
+            onFieldBlur={handleFieldBlur}
             onFileChange={(file) => updateMember(1, { studentIdFile: file })}
             onUploadingChange={(uploading) => setUploadingState("member-2", uploading)}
           />
@@ -343,10 +392,11 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
         {currentStepKey === "member-3" ? (
           <MemberStep
             category={formData.category}
-            errors={errors}
+            errors={visibleErrors}
             member={formData.members[2]}
             memberIndex={2}
             onChange={(changes) => updateMember(2, changes)}
+            onFieldBlur={handleFieldBlur}
             onFileChange={(file) => updateMember(2, { studentIdFile: file })}
             onUploadingChange={(uploading) => setUploadingState("member-3", uploading)}
           />
@@ -354,7 +404,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
 
         {currentStepKey === "responsible" ? (
           <ResponsibleStep
-            errors={errors}
+            errors={visibleErrors}
             onChange={(changes) =>
               setFormData((prev) => ({
                 ...prev,
@@ -364,26 +414,37 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
                 },
               }))
             }
+            onFieldBlur={handleFieldBlur}
             responsible={formData.responsible}
           />
         ) : null}
 
         {currentStepKey === "confirmation" ? (
           <ConfirmationStep
-            errors={errors}
+            errors={visibleErrors}
             formData={formData}
+            onFieldBlur={handleFieldBlur}
             onSchoolConsentFilesChange={(files) =>
-              setFormData((prev) => ({
-                ...prev,
-                schoolImageConsentFiles: files,
-              }))
+              setFormData((prev) => {
+                const next = {
+                  ...prev,
+                  schoolImageConsentFiles: files,
+                };
+                if (currentStepKey === "confirmation") {
+                  setErrors(validateStepByKey(next, currentStepKey));
+                }
+                return next;
+              })
             }
-            onToggle={(field, value) =>
-              setFormData((prev) => ({
-                ...prev,
+            onToggle={(field, value) => {
+              markFieldTouched(field);
+              const next = {
+                ...formData,
                 [field]: value,
-              }))
-            }
+              };
+              setFormData(next);
+              setErrors(validateStepByKey(next, currentStepKey));
+            }}
             onUploadingChange={(uploading) => setUploadingState("consents", uploading)}
           />
         ) : null}
@@ -395,7 +456,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
             type="button"
             variant="secondary"
           >
-            Atras
+            Atrás
           </Button>
           {!isLastStep ? (
             <Button
@@ -407,7 +468,7 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
             </Button>
           ) : (
             <Button isLoading={submitStatus === "saving"} onClick={handleSubmit} type="button" disabled={isSubmitDisabled}>
-              Enviar inscripcion
+              Enviar inscripción
             </Button>
           )}
         </div>
@@ -415,3 +476,4 @@ export function RegistrationForm({ category }: RegistrationFormProps) {
     </>
   );
 }
+

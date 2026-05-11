@@ -75,6 +75,12 @@ export function FileUpload({
     onUploadingChange?.(uploading);
   };
 
+  const hasFiles = files.length > 0;
+  const selectedLabel =
+    files.length === 1
+      ? `Archivo seleccionado: ${files[0].fileName}`
+      : `${files.length} archivos seleccionados y cargados.`;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -84,14 +90,35 @@ export function FileUpload({
         ) : null}
       </div>
 
-      {description ? <p className="text-xs text-csp-black/70">{description}</p> : null}
+      <p className="text-xs text-csp-black/70">
+        {description ?? "Adjunta el comprobante o archivo solicitado."}
+      </p>
+
+      {!hasFiles && !isUploading ? (
+        <p className="text-xs text-csp-black/70">
+          Selecciona un archivo desde tu dispositivo. La carga se realiza automáticamente.
+        </p>
+      ) : null}
+
+      {isUploading ? (
+        <p className="text-xs font-medium text-csp-primary">
+          Estamos cargando tu archivo. Espera unos segundos para continuar.
+        </p>
+      ) : null}
+
+      {hasFiles && !isUploading ? (
+        <div className="rounded-md border border-csp-accent/40 bg-csp-white p-2 text-xs text-csp-black/80">
+          <p className="font-medium text-csp-primary">{selectedLabel}</p>
+          <p className="mt-1">Archivo cargado correctamente. Si lo necesitas, puedes cambiarlo.</p>
+        </div>
+      ) : null}
 
       <div
         className={cn(
           "rounded-md border-2 border-dashed border-csp-neutral/70 bg-csp-soft p-3",
           "focus-within:border-csp-blue",
           (error || localError) && "border-csp-error",
-          files.length > 0 && "border-csp-accent/70",
+          hasFiles && "border-csp-accent/70",
         )}
       >
         <UploadDropzone
@@ -105,12 +132,12 @@ export function FileUpload({
           }}
           content={{
             allowedContent: multiple
-              ? "PDF, PNG, JPG/JPEG - maximo 3MB por archivo."
-              : "PDF, PNG, JPG/JPEG - maximo 2MB.",
-            button: files.length > 0 ? "Reemplazar archivo" : "Seleccionar archivo",
+              ? "PDF, PNG, JPG/JPEG - máximo 3MB por archivo."
+              : "PDF, PNG, JPG/JPEG - máximo 2MB.",
+            button: hasFiles ? "Cambiar archivo" : "Seleccionar archivo",
             label: multiple
-              ? "Arrastra o selecciona los consentimientos."
-              : "Arrastra o selecciona el documento.",
+              ? "Arrastra o selecciona los archivos."
+              : "Arrastra o selecciona el archivo.",
           }}
           endpoint={endpoint}
           onClientUploadComplete={(result) => {
@@ -127,7 +154,7 @@ export function FileUpload({
             if (!oversize) return selectedFiles;
 
             const maxLabel = endpoint === "studentIdUploader" ? "2MB" : "3MB";
-            const message = `El archivo ${oversize.name} supera el limite de ${maxLabel}.`;
+            const message = `El archivo ${oversize.name} supera el límite de ${maxLabel}.`;
             setLocalError(message);
             onError?.(message);
             handleUploadingState(false);
@@ -146,7 +173,7 @@ export function FileUpload({
         />
       </div>
 
-      {files.length > 0 ? (
+      {hasFiles ? (
         <ul className="space-y-1 rounded-md bg-csp-white p-2 text-xs text-csp-black/80">
           {files.map((file) => (
             <li key={file.fileKey} className="flex items-center justify-between gap-2">
@@ -157,8 +184,18 @@ export function FileUpload({
         </ul>
       ) : null}
 
-      {localError ? <p className="form-error">{localError}</p> : null}
-      {error ? <p className="form-error">{error}</p> : null}
+      {localError ? (
+        <p className="form-error flex items-start gap-1">
+          <span aria-hidden="true" className="font-semibold">!</span>
+          <span>{localError}</span>
+        </p>
+      ) : null}
+      {error ? (
+        <p className="form-error flex items-start gap-1">
+          <span aria-hidden="true" className="font-semibold">!</span>
+          <span>{error}</span>
+        </p>
+      ) : null}
     </div>
   );
 }

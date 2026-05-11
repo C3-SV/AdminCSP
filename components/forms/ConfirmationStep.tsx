@@ -7,6 +7,7 @@ import { formatPersonName } from "@/lib/utils";
 type ConfirmationStepProps = {
   formData: RegistrationFormData;
   errors: FieldErrors;
+  onFieldBlur: (fieldPath: string) => void;
   onToggle: (
     field:
       | "dataReviewAccepted"
@@ -25,6 +26,7 @@ function orDash(value?: string) {
 export function ConfirmationStep({
   formData,
   errors,
+  onFieldBlur,
   onToggle,
   onSchoolConsentFilesChange,
   onUploadingChange,
@@ -33,22 +35,22 @@ export function ConfirmationStep({
     <div className="space-y-4">
       <Card className="space-y-2">
         <h2 className="font-display text-lg font-semibold text-csp-primary">
-          Informacion del equipo
+          Información del equipo
         </h2>
         <p className="text-sm">
           <strong>Nombre:</strong> {orDash(formData.teamName)}
         </p>
         <p className="text-sm">
-          <strong>Categoria:</strong> {formData.category}
+          <strong>Categoría:</strong> {formData.category}
         </p>
         <p className="text-sm">
-          <strong>Institucion:</strong> {orDash(formData.institution)}
+          <strong>Institución:</strong> {orDash(formData.institution)}
         </p>
         <p className="text-sm">
           <strong>Fuente:</strong> {orDash(formData.discoverySource)}
         </p>
         <p className="text-sm">
-          <strong>Descripcion:</strong> {orDash(formData.teamDescription)}
+          <strong>Descripción:</strong> {orDash(formData.teamDescription)}
         </p>
         <p className="text-sm">
           <strong>Usuario de OmegaUp:</strong> {orDash(formData.teamOmegaUpUser)}
@@ -71,7 +73,7 @@ export function ConfirmationStep({
               <p className="font-medium text-csp-primary">
                 Miembro {index + 1}: {orDash(formatPersonName(member.firstName, member.lastName))}
               </p>
-              {index === 0 ? <Badge>Capitan</Badge> : null}
+              {index === 0 ? <Badge>Capitán</Badge> : null}
             </div>
             <p>
               <strong>Nombre:</strong>{" "}
@@ -87,7 +89,7 @@ export function ConfirmationStep({
               <strong>WhatsApp:</strong> {orDash(member.whatsapp)}
             </p>
             <p>
-              <strong>{formData.category === "universidades" ? "Carrera/Anio" : "Grado escolar"}:</strong>{" "}
+              <strong>{formData.category === "universidades" ? "Carrera/Año" : "Grado escolar"}:</strong>{" "}
               {formData.category === "universidades"
                 ? `${orDash(member.career)} / ${orDash(member.universityYear)}`
                 : orDash(member.schoolGrade)}
@@ -120,16 +122,16 @@ export function ConfirmationStep({
             <strong>Correo:</strong> {orDash(formData.responsible.email)}
           </p>
           <p className="text-sm">
-            <strong>Telefono:</strong> {orDash(formData.responsible.phone)}
+            <strong>Teléfono:</strong> {orDash(formData.responsible.phone)}
           </p>
           <p className="text-sm">
-            <strong>Institucion:</strong> {orDash(formData.responsible.institution)}
+            <strong>Institución:</strong> {orDash(formData.responsible.institution)}
           </p>
           <p className="text-sm">
             <strong>Rol:</strong> {orDash(formData.responsible.role)}
           </p>
           <p className="text-sm">
-            <strong>Relacion:</strong> {orDash(formData.responsible.relationship)}
+            <strong>Relación:</strong> {orDash(formData.responsible.relationship)}
           </p>
         </Card>
       ) : null}
@@ -144,28 +146,40 @@ export function ConfirmationStep({
             checked={formData.dataReviewAccepted}
             className="mt-1"
             onChange={(event) => onToggle("dataReviewAccepted", event.target.checked)}
+            onBlur={() => onFieldBlur("dataReviewAccepted")}
             type="checkbox"
           />
           <span>
-            He revisado que la informacion ingresada es correcta y confirmo que todos los
+            He revisado que la información ingresada es correcta y confirmo que todos los
             integrantes cumplen con las bases de la competencia.
           </span>
         </label>
-        {errors.dataReviewAccepted ? <p className="form-error">{errors.dataReviewAccepted}</p> : null}
+        {errors.dataReviewAccepted ? (
+          <p className="form-error flex items-start gap-1">
+            <span aria-hidden="true" className="font-semibold">!</span>
+            <span>{errors.dataReviewAccepted}</span>
+          </p>
+        ) : null}
 
         <label className="flex items-start gap-2 text-sm">
           <input
             checked={formData.privacyAccepted}
             className="mt-1"
             onChange={(event) => onToggle("privacyAccepted", event.target.checked)}
+            onBlur={() => onFieldBlur("privacyAccepted")}
             type="checkbox"
           />
           <span>
             Acepto el tratamiento de los datos personales para fines relacionados con la
-            Copa Salvadorena de Programacion 2026.
+            Copa Salvadoreña de Programación 2026.
           </span>
         </label>
-        {errors.privacyAccepted ? <p className="form-error">{errors.privacyAccepted}</p> : null}
+        {errors.privacyAccepted ? (
+          <p className="form-error flex items-start gap-1">
+            <span aria-hidden="true" className="font-semibold">!</span>
+            <span>{errors.privacyAccepted}</span>
+          </p>
+        ) : null}
 
         {formData.category === "universidades" ? (
           <>
@@ -176,16 +190,20 @@ export function ConfirmationStep({
                 onChange={(event) =>
                   onToggle("universityImageConsentAccepted", event.target.checked)
                 }
+                onBlur={() => onFieldBlur("universityImageConsentAccepted")}
                 type="checkbox"
               />
               <span>
-                Acepto el uso de imagen, nombre de equipo y afiliacion institucional en
-                fotografias, transmisiones y material oficial de la Copa Salvadorena de
-                Programacion 2026.
+                Acepto el uso de imagen, nombre de equipo y afiliación institucional en
+                fotografías, transmisiones y material oficial de la Copa Salvadoreña de
+                Programación 2026.
               </span>
             </label>
             {errors.universityImageConsentAccepted ? (
-              <p className="form-error">{errors.universityImageConsentAccepted}</p>
+              <p className="form-error flex items-start gap-1">
+                <span aria-hidden="true" className="font-semibold">!</span>
+                <span>{errors.universityImageConsentAccepted}</span>
+              </p>
             ) : null}
           </>
         ) : (

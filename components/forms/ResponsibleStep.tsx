@@ -7,12 +7,14 @@ import { Textarea } from "@/components/ui/Textarea";
 type ResponsibleStepProps = {
   responsible: Responsible;
   errors: FieldErrors;
+  onFieldBlur: (fieldPath: string) => void;
   onChange: (changes: Partial<Responsible>) => void;
 };
 
 export function ResponsibleStep({
   responsible,
   errors,
+  onFieldBlur,
   onChange,
 }: ResponsibleStepProps) {
   return (
@@ -22,7 +24,7 @@ export function ResponsibleStep({
           Responsable institucional
         </h2>
         <p className="mt-1 text-sm text-csp-black/70">
-          Registra a la persona adulta o institucional que acompanara la inscripcion del equipo.
+          Registra a la persona adulta o institucional que acompañará la inscripción del equipo.
         </p>
       </div>
 
@@ -32,6 +34,7 @@ export function ResponsibleStep({
           id="responsible-firstName"
           label="Nombre *"
           onChange={(event) => onChange({ firstName: event.target.value })}
+          onBlur={() => onFieldBlur("responsible.firstName")}
           value={responsible.firstName}
         />
         <Input
@@ -39,14 +42,16 @@ export function ResponsibleStep({
           id="responsible-lastName"
           label="Apellido *"
           onChange={(event) => onChange({ lastName: event.target.value })}
+          onBlur={() => onFieldBlur("responsible.lastName")}
           value={responsible.lastName}
         />
       </div>
       <Input
         error={errors["responsible.email"]}
         id="responsible-email"
-        label="Correo electronico *"
+        label="Correo electrónico *"
         onChange={(event) => onChange({ email: event.target.value })}
+        onBlur={() => onFieldBlur("responsible.email")}
         type="email"
         value={responsible.email}
       />
@@ -55,15 +60,17 @@ export function ResponsibleStep({
         <Input
           error={errors["responsible.phone"]}
           id="responsible-phone"
-          label="Numero de telefono / WhatsApp *"
+          label="Número de teléfono / WhatsApp *"
           onChange={(event) => onChange({ phone: event.target.value })}
+          onBlur={() => onFieldBlur("responsible.phone")}
           value={responsible.phone}
         />
         <Input
           error={errors["responsible.institution"]}
           id="responsible-institution"
-          label="Institucion *"
+          label="Institución *"
           onChange={(event) => onChange({ institution: event.target.value })}
+          onBlur={() => onFieldBlur("responsible.institution")}
           value={responsible.institution}
         />
       </div>
@@ -73,6 +80,7 @@ export function ResponsibleStep({
         id="responsible-role"
         label="Rol *"
         onChange={(event) => onChange({ role: event.target.value as Responsible["role"] })}
+        onBlur={() => onFieldBlur("responsible.role")}
         options={SCHOOL_RESPONSIBLE_ROLES}
         placeholder="Selecciona un rol"
         value={responsible.role}
@@ -81,8 +89,9 @@ export function ResponsibleStep({
       <Input
         error={errors["responsible.relationship"]}
         id="responsible-relationship"
-        label="Relacion con el equipo *"
+        label="Relación con el equipo *"
         onChange={(event) => onChange({ relationship: event.target.value })}
+        onBlur={() => onFieldBlur("responsible.relationship")}
         value={responsible.relationship}
       />
 
@@ -90,6 +99,7 @@ export function ResponsibleStep({
         id="responsible-comments"
         label="Comentarios adicionales (opcional)"
         onChange={(event) => onChange({ comments: event.target.value })}
+        onBlur={() => onFieldBlur("responsible.comments")}
         rows={3}
         value={responsible.comments ?? ""}
       />

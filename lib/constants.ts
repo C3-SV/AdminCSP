@@ -22,8 +22,8 @@ export const DISCOVERY_SOURCE_OPTIONS: Array<{
   { value: "esen", label: "ESEN" },
   { value: "omegaup", label: "OmegaUp" },
   { value: "profesor", label: "Profesor / docente" },
-  { value: "amigo_companero", label: "Amigo o companero" },
-  { value: "institucion", label: "Institucion educativa" },
+  { value: "amigo_companero", label: "Amigo o compañero" },
+  { value: "institucion", label: "Institución educativa" },
   { value: "otro", label: "Otro" },
 ];
 
@@ -32,23 +32,22 @@ export const SCHOOL_RESPONSIBLE_ROLES: Array<{
   label: string;
 }> = [
   { value: "docente", label: "Docente" },
-  { value: "coordinador_academico", label: "Coordinador academico" },
+  { value: "coordinador_academico", label: "Coordinador académico" },
   { value: "director", label: "Director" },
   { value: "encargado_institucional", label: "Encargado institucional" },
   { value: "mentor", label: "Mentor" },
   { value: "otro", label: "Otro" },
 ];
 
-
 export const REGISTRATION_STATUS_OPTIONS: Array<{
   value: RegistrationStatus;
   label: string;
 }> = [
   { value: "recibida", label: "Recibida" },
-  { value: "en_revision", label: "En revision" },
+  { value: "en_revision", label: "En revisión" },
   { value: "aprobada", label: "Aprobada" },
   { value: "rechazada", label: "Rechazada" },
-  { value: "pendiente_correccion", label: "Pendiente de correccion" },
+  { value: "pendiente_correccion", label: "Pendiente de corrección" },
 ];
 
 export const CATEGORY_OPTIONS: Array<{
@@ -59,11 +58,11 @@ export const CATEGORY_OPTIONS: Array<{
   {
     value: "colegios",
     label: "Colegios",
-    description: "Para equipos de educacion media.",
+    description: "Para equipos de educación media.",
   },
   {
     value: "universidades",
     label: "Universidades",
-    description: "Para equipos de educacion superior.",
+    description: "Para equipos de educación superior.",
   },
 ];

@@ -14,6 +14,7 @@ type MemberStepProps = {
   memberIndex: number;
   category: RegistrationCategory;
   errors: FieldErrors;
+  onFieldBlur: (fieldPath: string) => void;
   onChange: (changes: Partial<TeamMember>) => void;
   onFileChange: (file: UploadedFileMetadata | null) => void;
   onUploadingChange: (uploading: boolean) => void;
@@ -24,6 +25,7 @@ export function MemberStep({
   memberIndex,
   category,
   errors,
+  onFieldBlur,
   onChange,
   onFileChange,
   onUploadingChange,
@@ -37,10 +39,10 @@ export function MemberStep({
           <h2 className="font-display text-lg font-semibold text-csp-primary">
             Miembro {memberIndex + 1}
           </h2>
-          {memberIndex === 0 ? <Badge variant="default">Capitan</Badge> : null}
+          {memberIndex === 0 ? <Badge variant="default">Capitán</Badge> : null}
         </div>
         <p className="mt-1 text-sm text-csp-black/70">
-          Registra la informacion personal y academica del integrante.
+          Registra la información personal y académica del integrante.
         </p>
       </div>
 
@@ -50,6 +52,7 @@ export function MemberStep({
           id={`member-${memberIndex}-firstName`}
           label="Nombre *"
           onChange={(event) => onChange({ firstName: event.target.value })}
+          onBlur={() => onFieldBlur(`${prefix}.firstName`)}
           value={member.firstName}
         />
         <Input
@@ -57,6 +60,7 @@ export function MemberStep({
           id={`member-${memberIndex}-lastName`}
           label="Apellido *"
           onChange={(event) => onChange({ lastName: event.target.value })}
+          onBlur={() => onFieldBlur(`${prefix}.lastName`)}
           value={member.lastName}
         />
       </div>
@@ -71,14 +75,16 @@ export function MemberStep({
               age: event.target.value ? Number(event.target.value) : "",
             })
           }
+          onBlur={() => onFieldBlur(`${prefix}.age`)}
           type="number"
           value={member.age}
         />
         <Input
           error={errors[`${prefix}.email`]}
           id={`member-${memberIndex}-email`}
-          label="Correo electronico *"
+          label="Correo electrónico *"
           onChange={(event) => onChange({ email: event.target.value })}
+          onBlur={() => onFieldBlur(`${prefix}.email`)}
           type="email"
           value={member.email}
         />
@@ -88,6 +94,7 @@ export function MemberStep({
         id={`member-${memberIndex}-whatsapp`}
         label="WhatsApp"
         onChange={(event) => onChange({ whatsapp: event.target.value })}
+        onBlur={() => onFieldBlur(`${prefix}.whatsapp`)}
         value={member.whatsapp ?? ""}
       />
 
@@ -99,20 +106,24 @@ export function MemberStep({
               id={`member-${memberIndex}-career`}
               label="Carrera *"
               onChange={(event) => onChange({ career: event.target.value })}
+              onBlur={() => onFieldBlur(`${prefix}.career`)}
               value={member.career ?? ""}
             />
             <Input
               error={errors[`${prefix}.universityYear`]}
               id={`member-${memberIndex}-universityYear`}
-              label="Anio de estudio *"
+              label="Año de estudio *"
               onChange={(event) => onChange({ universityYear: event.target.value })}
+              onBlur={() => onFieldBlur(`${prefix}.universityYear`)}
               value={member.universityYear ?? ""}
             />
           </div>
           <Input
+            error={errors[`${prefix}.linkedin`]}
             id={`member-${memberIndex}-linkedin`}
             label="LinkedIn (opcional)"
             onChange={(event) => onChange({ linkedin: event.target.value })}
+            onBlur={() => onFieldBlur(`${prefix}.linkedin`)}
             placeholder="https://www.linkedin.com/in/tu-perfil"
             type="url"
             value={member.linkedin ?? ""}
@@ -122,8 +133,9 @@ export function MemberStep({
         <Input
           error={errors[`${prefix}.schoolGrade`]}
           id={`member-${memberIndex}-schoolGrade`}
-          label="Grado / anio escolar *"
+          label="Grado / año escolar *"
           onChange={(event) => onChange({ schoolGrade: event.target.value })}
+          onBlur={() => onFieldBlur(`${prefix}.schoolGrade`)}
           value={member.schoolGrade ?? ""}
         />
       )}
@@ -132,6 +144,7 @@ export function MemberStep({
         id={`member-${memberIndex}-about`}
         label="Sobre ti (opcional)"
         onChange={(event) => onChange({ about: event.target.value })}
+        onBlur={() => onFieldBlur(`${prefix}.about`)}
         rows={3}
         value={member.about ?? ""}
       />
@@ -139,7 +152,7 @@ export function MemberStep({
       <FileUpload
         endpoint="studentIdUploader"
         error={errors[`${prefix}.studentIdFile`]}
-        label="Carne estudiantil o documento de estudiante *"
+        label="Carné estudiantil o documento de estudiante *"
         onChange={(file) => onFileChange((file as UploadedFileMetadata) ?? null)}
         onUploadingChange={onUploadingChange}
         value={member.studentIdFile ?? null}

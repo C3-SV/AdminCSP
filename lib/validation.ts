@@ -24,6 +24,17 @@ export function validateEmail(value?: string): boolean {
   return EMAIL_REGEX.test(value.trim());
 }
 
+export function validateLinkedInUrl(value?: string): boolean {
+  if (!value?.trim()) return true;
+
+  try {
+    const parsed = new URL(value.trim());
+    return ["www.linkedin.com", "linkedin.com", "lnkd.in"].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function validateAge(value: number | ""): boolean {
   if (value === "") return false;
   return Number.isInteger(value) && value >= 10 && value <= 99;
@@ -38,31 +49,36 @@ function validateMemberCore(
   const prefix = `members.${memberIndex}`;
 
   if (!member.firstName.trim()) {
-    errors[`${prefix}.firstName`] = "El nombre es obligatorio.";
+    errors[`${prefix}.firstName`] = "Ingresa el nombre del participante.";
   }
   if (!member.lastName.trim()) {
-    errors[`${prefix}.lastName`] = "El apellido es obligatorio.";
+    errors[`${prefix}.lastName`] = "Ingresa el apellido del participante.";
   }
   if (!validateAge(member.age)) {
-    errors[`${prefix}.age`] = "Ingresa una edad valida.";
+    errors[`${prefix}.age`] = "Ingresa una edad válida.";
   }
-  if (!validateEmail(member.email)) {
-    errors[`${prefix}.email`] = "Ingresa un correo valido.";
+  if (!member.email.trim()) {
+    errors[`${prefix}.email`] = "Ingresa un correo electrónico.";
+  } else if (!validateEmail(member.email)) {
+    errors[`${prefix}.email`] = "Ingresa un correo electrónico válido.";
   }
 
   if (category === "universidades") {
-    if (!member.career?.trim()) errors[`${prefix}.career`] = "La carrera es obligatoria.";
+    if (!member.career?.trim()) errors[`${prefix}.career`] = "Ingresa la carrera del participante.";
     if (!member.universityYear?.trim()) {
-      errors[`${prefix}.universityYear`] = "El anio de estudio es obligatorio.";
+      errors[`${prefix}.universityYear`] = "Ingresa el año de estudio.";
+    }
+    if (!validateLinkedInUrl(member.linkedin)) {
+      errors[`${prefix}.linkedin`] = "Ingresa un enlace válido de LinkedIn.";
     }
   }
 
   if (category === "colegios" && !member.schoolGrade?.trim()) {
-    errors[`${prefix}.schoolGrade`] = "El grado/anio escolar es obligatorio.";
+    errors[`${prefix}.schoolGrade`] = "Ingresa el grado o año escolar.";
   }
 
   if (!member.studentIdFile?.fileUrl) {
-    errors[`${prefix}.studentIdFile`] = "Debes subir el documento del integrante.";
+    errors[`${prefix}.studentIdFile`] = "Sube el documento del participante.";
   }
 
   return errors;
@@ -71,21 +87,23 @@ function validateMemberCore(
 export function validateTeamStep(formData: RegistrationFormData): FieldErrors {
   const errors: FieldErrors = {};
 
-  if (!formData.teamName.trim()) errors.teamName = "El nombre del equipo es obligatorio.";
-  if (!formData.institution.trim()) errors.institution = "La institucion es obligatoria.";
-  if (!formData.discoverySource) errors.discoverySource = "Selecciona una fuente.";
+  if (!formData.teamName.trim()) errors.teamName = "Ingresa el nombre del equipo.";
+  if (!formData.institution.trim()) {
+    errors.institution = "Ingresa el nombre de la institución.";
+  }
+  if (!formData.discoverySource) errors.discoverySource = "Selecciona cómo conocieron la Copa.";
 
   if (formData.discoverySource === "otro" && !formData.discoverySourceOther?.trim()) {
-    errors.discoverySourceOther = "Especifica como conocieron la Copa.";
+    errors.discoverySourceOther = "Especifica cómo conocieron la Copa.";
   }
   if (!formData.teamDescription.trim()) {
-    errors.teamDescription = "La descripcion del equipo es obligatoria.";
+    errors.teamDescription = "Ingresa una descripción breve del equipo.";
   }
   if (!formData.teamOmegaUpUser.trim()) {
-    errors.teamOmegaUpUser = "El usuario de OmegaUp del equipo es obligatorio.";
+    errors.teamOmegaUpUser = "Ingresa el usuario de OmegaUp del equipo.";
   }
   if (formData.contactEmail && !validateEmail(formData.contactEmail)) {
-    errors.contactEmail = "Ingresa un correo principal valido.";
+    errors.contactEmail = "Ingresa un correo electrónico válido.";
   }
 
   return errors;
@@ -107,23 +125,25 @@ export function validateResponsibleStep(formData: RegistrationFormData): FieldEr
   const responsible = formData.responsible;
 
   if (!responsible.firstName.trim()) {
-    errors["responsible.firstName"] = "El nombre es obligatorio.";
+    errors["responsible.firstName"] = "Ingresa el nombre del responsable.";
   }
   if (!responsible.lastName.trim()) {
-    errors["responsible.lastName"] = "El apellido es obligatorio.";
+    errors["responsible.lastName"] = "Ingresa el apellido del responsable.";
   }
-  if (!validateEmail(responsible.email)) {
-    errors["responsible.email"] = "Ingresa un correo valido.";
+  if (!responsible.email.trim()) {
+    errors["responsible.email"] = "Ingresa un correo electrónico.";
+  } else if (!validateEmail(responsible.email)) {
+    errors["responsible.email"] = "Ingresa un correo electrónico válido.";
   }
   if (!responsible.phone.trim()) {
-    errors["responsible.phone"] = "El telefono/WhatsApp es obligatorio.";
+    errors["responsible.phone"] = "Ingresa un número de teléfono o WhatsApp.";
   }
   if (!responsible.institution.trim()) {
-    errors["responsible.institution"] = "La institucion es obligatoria.";
+    errors["responsible.institution"] = "Ingresa el nombre de la institución.";
   }
-  if (!responsible.role) errors["responsible.role"] = "Selecciona un rol.";
+  if (!responsible.role) errors["responsible.role"] = "Selecciona el rol del responsable.";
   if (!responsible.relationship.trim()) {
-    errors["responsible.relationship"] = "La relacion con el equipo es obligatoria.";
+    errors["responsible.relationship"] = "Ingresa la relación con el equipo.";
   }
 
   return errors;
@@ -133,7 +153,7 @@ export function validateConfirmationStep(formData: RegistrationFormData): FieldE
   const errors: FieldErrors = {};
 
   if (!formData.dataReviewAccepted) {
-    errors.dataReviewAccepted = "Debes confirmar que revisaste la informacion.";
+    errors.dataReviewAccepted = "Debes confirmar que revisaste la información.";
   }
   if (!formData.privacyAccepted) {
     errors.privacyAccepted = "Debes aceptar el tratamiento de datos personales.";

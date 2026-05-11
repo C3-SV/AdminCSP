@@ -22,6 +22,9 @@ export function Select({
   id,
   ...props
 }: SelectProps) {
+  const errorId = error && id ? `${id}-error` : undefined;
+  const describedBy = [props["aria-describedby"], errorId].filter(Boolean).join(" ") || undefined;
+
   return (
     <div className="space-y-1">
       {label ? (
@@ -35,6 +38,8 @@ export function Select({
           error && "border-csp-error focus:border-csp-error focus:ring-csp-error/20",
           className,
         )}
+        aria-describedby={describedBy}
+        aria-invalid={error ? "true" : undefined}
         id={id}
         {...props}
       >
@@ -45,7 +50,13 @@ export function Select({
           </option>
         ))}
       </select>
-      {error ? <p className="form-error">{error}</p> : null}
+      {error ? (
+        <p className="form-error flex items-start gap-1" id={errorId}>
+          <span aria-hidden="true" className="font-semibold">!</span>
+          <span>{error}</span>
+        </p>
+      ) : null}
     </div>
   );
 }
+

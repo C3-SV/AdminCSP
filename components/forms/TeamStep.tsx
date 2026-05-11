@@ -8,13 +8,14 @@ import { FieldErrors, RegistrationFormData } from "@/lib/types";
 type TeamStepProps = {
   formData: RegistrationFormData;
   errors: FieldErrors;
+  onFieldBlur: (fieldPath: string) => void;
   onChange: <K extends keyof RegistrationFormData>(
     field: K,
     value: RegistrationFormData[K],
   ) => void;
 };
 
-export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
+export function TeamStep({ formData, errors, onFieldBlur, onChange }: TeamStepProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-md bg-csp-soft p-3">
@@ -23,7 +24,7 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
             Datos del equipo
           </h2>
           <p className="text-sm text-csp-black/70">
-            Completa la informacion general para iniciar la inscripcion.
+            Completa la información general para iniciar la inscripción.
           </p>
         </div>
         <Badge variant="accent">
@@ -36,6 +37,7 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
         id="teamName"
         label="Nombre del equipo *"
         onChange={(event) => onChange("teamName", event.target.value)}
+        onBlur={() => onFieldBlur("teamName")}
         value={formData.teamName}
       />
 
@@ -44,22 +46,24 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
         id="institution"
         label={
           formData.category === "colegios"
-            ? "Colegio / institucion educativa *"
-            : "Universidad / institucion *"
+            ? "Colegio / institución educativa *"
+            : "Universidad / institución *"
         }
         onChange={(event) => onChange("institution", event.target.value)}
+        onBlur={() => onFieldBlur("institution")}
         value={formData.institution}
       />
 
       <Select
         error={errors.discoverySource}
         id="discoverySource"
-        label="Como conocieron la Copa? *"
+        label="¿Cómo conocieron la Copa? *"
         onChange={(event) =>
           onChange("discoverySource", event.target.value as RegistrationFormData["discoverySource"])
         }
+        onBlur={() => onFieldBlur("discoverySource")}
         options={DISCOVERY_SOURCE_OPTIONS}
-        placeholder="Selecciona una opcion"
+        placeholder="Selecciona una opción"
         value={formData.discoverySource}
       />
 
@@ -69,6 +73,7 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
           id="discoverySourceOther"
           label="Especifica la fuente *"
           onChange={(event) => onChange("discoverySourceOther", event.target.value)}
+          onBlur={() => onFieldBlur("discoverySourceOther")}
           value={formData.discoverySourceOther ?? ""}
         />
       ) : null}
@@ -76,8 +81,9 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
       <Textarea
         error={errors.teamDescription}
         id="teamDescription"
-        label="Descripcion breve del equipo *"
+        label="Descripción breve del equipo *"
         onChange={(event) => onChange("teamDescription", event.target.value)}
+        onBlur={() => onFieldBlur("teamDescription")}
         rows={4}
         value={formData.teamDescription}
       />
@@ -92,10 +98,11 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
           id="teamOmegaUpUser"
           label="Usuario de OmegaUp del equipo *"
           onChange={(event) => onChange("teamOmegaUpUser", event.target.value)}
+          onBlur={() => onFieldBlur("teamOmegaUpUser")}
           value={formData.teamOmegaUpUser}
         />
         <p className="mt-1 text-xs text-csp-black/70">
-          Usaremos este usuario para registrar y validar la participacion del equipo en la
+          Usaremos este usuario para registrar y validar la participación del equipo en la
           plataforma de competencia.
         </p>
       </div>
@@ -105,6 +112,7 @@ export function TeamStep({ formData, errors, onChange }: TeamStepProps) {
         id="contactEmail"
         label="Correo principal (opcional)"
         onChange={(event) => onChange("contactEmail", event.target.value)}
+        onBlur={() => onFieldBlur("contactEmail")}
         type="email"
         value={formData.contactEmail ?? ""}
       />
