@@ -1,89 +1,71 @@
-﻿# CSP Admin App (`admin` branch)
+# AdminCSP
 
-Standalone admin panel for Copa Salvadoreña de Programación (CSP), extracted from the original website repository.
+Admin standalone de la Copa Salvadorena de Programacion (CSP), preparado para ejecutarse y desplegarse como proyecto independiente.
 
-Target deployment: **`admin.c3.com.sv`**
+Ruta principal:
+- `/` redirige a `/admin`
+- el panel sigue funcionando en `/admin`
 
-## What this branch contains
+## Stack
 
-- Admin routes and UI only (`/admin`)
-- Firebase Auth + Firestore integration used by the admin panel
-- Mock fallback for registrations when Firebase env is missing/incomplete
-- Root route (`/`) redirecting to the admin entry
+- Next.js (App Router)
+- Firebase (`Auth` + `Firestore`)
+- TypeScript
+- Tailwind CSS
 
-## What was removed from the original site
+## Ejecutar localmente
 
-- Public landing page and public registration flow
-- Public headers/footers and registration form components
-- Public upload API and upload UI helpers
-- Public-only assets not used by admin
-
-## What was kept because admin depends on it
-
-- `app/admin/**` pages
-- `components/admin/**` and admin-used `components/ui/**`
-- Global styling (`app/globals.css`) and Tailwind/Next config
-- Firebase bootstrap in `lib/firebase/**`
-- CSP admin logo asset(s) used in login/sidebar
-
-## Folder structure
-
-```txt
-app/
-  admin/
-  layout.tsx
-  page.tsx                # redirects to admin route
-components/
-  admin/
-    auth/
-    layout/
-  ui/
-constants/
-  admin/
-lib/
-  admin/
-    routes.ts
-  firebase/
-services/
-  admin/
-types/
-  admin/
-utils/
-  admin/
-```
-
-## Environment variables
-
-Required (Firebase):
-
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
-
-Domain integration:
-
-- `NEXT_PUBLIC_MAIN_SITE_URL` (optional link target for the main public site)
-
-Optional:
-
-- `UPLOADTHING_TOKEN` (shown as optional diagnostic status in Admin > Configuración)
-
-## Run locally
+1. Instala dependencias:
 
 ```bash
 npm install
+```
+
+2. Crea tu archivo local de entorno:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Levanta el proyecto:
+
+```bash
 npm run dev
 ```
 
-Then open:
-
-- `http://localhost:3000/` (redirects to admin)
+Abre:
+- `http://localhost:3000/`
 - `http://localhost:3000/admin`
 
-## Quality checks
+## Variables de entorno
+
+Definidas en `.env.example`:
+
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_ADMIN_SITE_URL=https://admin.copa.c3.com.sv
+NEXT_PUBLIC_MAIN_SITE_URL=https://copa.c3.com.sv
+UPLOADTHING_TOKEN=
+```
+
+Notas:
+- `NEXT_PUBLIC_*` se usan para la configuracion del cliente Firebase.
+- `UPLOADTHING_TOKEN` es opcional y solo se usa como diagnostico en la pagina de configuracion.
+
+## Scripts
+
+- `npm run dev`: servidor de desarrollo
+- `npm run build`: build de produccion
+- `npm run start`: servidor de produccion
+- `npm run lint`: lint con ESLint
+- `npm run typecheck`: chequeo de tipos TypeScript
+
+## Validacion recomendada
 
 ```bash
 npm run lint
@@ -91,4 +73,11 @@ npm run typecheck
 npm run build
 ```
 
-Note: in restricted/offline environments, `next build` can fail if Google Fonts cannot be fetched.
+## Despliegue (admin.copa.c3.com.sv)
+
+- Build command: `npm run build`
+- Start command: `npm run start`
+- Dominio objetivo: `admin.copa.c3.com.sv`
+- Configura todas las variables de entorno antes del build.
+
+Si esta carpeta viene de otro repo, crea un repo nuevo para `AdminCSP` y apunta su `origin` al nuevo remoto antes de publicar.
