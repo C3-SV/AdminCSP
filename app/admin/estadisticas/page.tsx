@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { StatsCards } from "@/components/admin/StatsCards";
-import { AdminTopbar } from "@/components/layout/AdminTopbar";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
 import {
   countByStatus,
   countParticipants,
   uniqueInstitutions,
-} from "@/lib/admin-utils";
-import { getRegistrations } from "@/lib/firebase-registrations";
-import { RegistrationDocument } from "@/lib/types";
+} from "@/utils/admin/metrics";
+import { getRegistrations } from "@/services/admin/registrations";
+import { RegistrationDocument } from "@/types/admin/registration";
 
 function BarRow({
   label,

@@ -1,6 +1,5 @@
 @config "../tailwind.config.mjs";
 @import "tailwindcss";
-@import "@uploadthing/react/styles.css";
 
 :root {
   --font-display: var(--font-poppins);

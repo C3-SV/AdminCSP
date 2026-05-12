@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { REGISTRATION_STATUS_OPTIONS } from "@/lib/constants";
-import { updateRegistrationStatus } from "@/lib/firebase-registrations";
-import { RegistrationDocument, RegistrationStatus } from "@/lib/types";
-import { formatDate, formatPersonName } from "@/lib/utils";
+import { REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Toast } from "@/components/ui/Toast";
+import { updateRegistrationStatus } from "@/services/admin/registrations";
+import { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
+import { formatDate, formatPersonName } from "@/utils/admin";
 
 type RegistrationDetailProps = {
   registration: RegistrationDocument;

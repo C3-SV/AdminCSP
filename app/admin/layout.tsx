@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
-import { AdminAuthGate } from "@/components/auth/AdminAuthGate";
-import { AdminAuthProvider } from "@/components/auth/AdminAuthProvider";
+import { AdminAuthGate } from "@/components/admin/auth/AdminAuthGate";
+import { AdminAuthProvider } from "@/components/admin/auth/AdminAuthProvider";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (

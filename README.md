@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# CSP Admin App (`admin` branch)
 
-## Getting Started
+Standalone admin panel for Copa Salvadoreña de Programación (CSP), extracted from the original website repository.
 
-First, run the development server:
+Target deployment: **`admin.c3.com.sv`**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## What this branch contains
+
+- Admin routes and UI only (`/admin`)
+- Firebase Auth + Firestore integration used by the admin panel
+- Mock fallback for registrations when Firebase env is missing/incomplete
+- Root route (`/`) redirecting to the admin entry
+
+## What was removed from the original site
+
+- Public landing page and public registration flow
+- Public headers/footers and registration form components
+- Public upload API and upload UI helpers
+- Public-only assets not used by admin
+
+## What was kept because admin depends on it
+
+- `app/admin/**` pages
+- `components/admin/**` and admin-used `components/ui/**`
+- Global styling (`app/globals.css`) and Tailwind/Next config
+- Firebase bootstrap in `lib/firebase/**`
+- CSP admin logo asset(s) used in login/sidebar
+
+## Folder structure
+
+```txt
+app/
+  admin/
+  layout.tsx
+  page.tsx                # redirects to admin route
+components/
+  admin/
+    auth/
+    layout/
+  ui/
+constants/
+  admin/
+lib/
+  admin/
+    routes.ts
+  firebase/
+services/
+  admin/
+types/
+  admin/
+utils/
+  admin/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Required (Firebase):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-## Learn More
+Domain integration:
 
-To learn more about Next.js, take a look at the following resources:
+- `NEXT_PUBLIC_MAIN_SITE_URL` (optional link target for the main public site)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Optional:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `UPLOADTHING_TOKEN` (shown as optional diagnostic status in Admin > Configuración)
 
-## Deploy on Vercel
+## Run locally
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Then open:
+
+- `http://localhost:3000/` (redirects to admin)
+- `http://localhost:3000/admin`
+
+## Quality checks
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Note: in restricted/offline environments, `next build` can fail if Google Fonts cannot be fetched.

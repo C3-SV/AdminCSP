@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { RegistrationDocument } from "@/lib/types";
-import { formatDate, formatPersonName } from "@/lib/utils";
+import { adminPath } from "@/lib/admin/routes";
+import { RegistrationDocument } from "@/types/admin/registration";
+import { formatDate, formatPersonName } from "@/utils/admin";
 
 const statusLabelMap: Record<RegistrationDocument["status"], string> = {
   recibida: "Recibida",
@@ -63,7 +64,7 @@ export function RegistrationsTable({ registrations }: RegistrationsTableProps) {
               <td className="px-3 py-3">
                 <Link
                   className="font-semibold text-csp-blue hover:underline"
-                  href={`/admin/inscripciones/${registration.id}`}
+                  href={adminPath(`/inscripciones/${registration.id}`)}
                 >
                   Ver detalle
                 </Link>

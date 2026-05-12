@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Copa Salvadoreña de Programación 2026",
-  description: "Módulo de inscripción y administración de la CSP 2026.",
+  title: "Panel Administrativo | Copa Salvadorena de Programacion 2026",
+  description: "Panel administrativo de inscripciones para la CSP 2026.",
 };
 
 export default function RootLayout({
@@ -35,3 +35,4 @@ export default function RootLayout({
     </html>
   );
 }
+

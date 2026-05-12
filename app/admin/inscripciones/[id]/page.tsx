@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RegistrationDetail } from "@/components/admin/RegistrationDetail";
-import { AdminTopbar } from "@/components/layout/AdminTopbar";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getRegistrationById } from "@/lib/firebase-registrations";
-import { RegistrationDocument } from "@/lib/types";
+import { adminPath } from "@/lib/admin/routes";
+import { getRegistrationById } from "@/services/admin/registrations";
+import { RegistrationDocument } from "@/types/admin/registration";
 
 export default function AdminInscripcionDetallePage() {
   const params = useParams<{ id: string }>();
@@ -45,7 +46,7 @@ export default function AdminInscripcionDetallePage() {
 
       <Link
         className="inline-flex h-11 items-center justify-center rounded-md border border-csp-primary px-4 text-sm font-semibold text-csp-primary hover:bg-csp-soft"
-        href="/admin/inscripciones"
+        href={adminPath("/inscripciones")}
       >
         Volver a inscripciones
       </Link>

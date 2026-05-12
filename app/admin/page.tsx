@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { AdminTopbar } from "@/components/layout/AdminTopbar";
-import { getRegistrations } from "@/lib/firebase-registrations";
-import { RegistrationDocument } from "@/lib/types";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
+import { getRegistrations } from "@/services/admin/registrations";
+import { RegistrationDocument } from "@/types/admin/registration";
 
 export default function AdminPage() {
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);

@@ -4,14 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminFilters } from "@/components/admin/AdminFilters";
 import { RegistrationsTable } from "@/components/admin/RegistrationsTable";
 import { StatsCards } from "@/components/admin/StatsCards";
-import { AdminTopbar } from "@/components/layout/AdminTopbar";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { exportRegistrationsToCSV } from "@/lib/csv";
-import { getRegistrations } from "@/lib/firebase-registrations";
-import { RegistrationDocument, RegistrationStatus } from "@/lib/types";
-import { countByStatus } from "@/lib/admin-utils";
-import { formatPersonName } from "@/lib/utils";
+import { getRegistrations } from "@/services/admin/registrations";
+import { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
+import { exportRegistrationsToCSV } from "@/utils/admin/csv";
+import { countByStatus } from "@/utils/admin/metrics";
+import { formatPersonName } from "@/utils/admin";
 
 function isSameDate(dateISO: string | undefined, dateFilter: string) {
   if (!dateISO || !dateFilter) {

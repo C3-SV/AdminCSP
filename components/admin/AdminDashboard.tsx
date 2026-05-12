@@ -1,7 +1,8 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { StatsCards } from "@/components/admin/StatsCards";
-import { RegistrationDocument } from "@/lib/types";
+import { adminPath } from "@/lib/admin/routes";
+import { RegistrationDocument } from "@/types/admin/registration";
 
 type AdminDashboardProps = {
   registrations: RegistrationDocument[];
@@ -29,47 +30,48 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-4">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            Gestión de inscripciones
+            GestiÃ³n de inscripciones
           </h2>
           <p className="mt-1 text-sm text-csp-black/70">
             Revisa equipos, estados y documentos.
           </p>
           <Link
             className="mt-3 inline-block text-sm font-semibold text-csp-blue hover:underline"
-            href="/admin/inscripciones"
+            href={adminPath("/inscripciones")}
           >
             Ir al listado
           </Link>
         </Card>
         <Card className="p-4">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            Estadísticas
+            EstadÃ­sticas
           </h2>
           <p className="mt-1 text-sm text-csp-black/70">
-            Consulta distribución por categoría y estado.
+            Consulta distribuciÃ³n por categorÃ­a y estado.
           </p>
           <Link
             className="mt-3 inline-block text-sm font-semibold text-csp-blue hover:underline"
-            href="/admin/estadisticas"
+            href={adminPath("/estadisticas")}
           >
-            Ver estadísticas
+            Ver estadÃ­sticas
           </Link>
         </Card>
         <Card className="p-4">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            Configuración
+            ConfiguraciÃ³n
           </h2>
           <p className="mt-1 text-sm text-csp-black/70">
             Estado de Firebase e integraciones futuras.
           </p>
           <Link
             className="mt-3 inline-block text-sm font-semibold text-csp-blue hover:underline"
-            href="/admin/configuracion"
+            href={adminPath("/configuracion")}
           >
-            Ver configuración
+            Ver configuraciÃ³n
           </Link>
         </Card>
       </div>
     </div>
   );
 }
+

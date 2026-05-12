@@ -1,11 +1,11 @@
-import { AdminTopbar } from "@/components/layout/AdminTopbar";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
 import {
   EVENT_NAME,
   ONLINE_PHASE_DATE,
   SCHOOL_PRESENTIAL_DATE,
   UNIVERSITY_PRESENTIAL_DATE,
-} from "@/lib/constants";
+} from "@/constants/admin";
 import { firebaseConfigDiagnostics, isFirebaseConfigured } from "@/lib/firebase";
 
 export default function AdminConfiguracionPage() {

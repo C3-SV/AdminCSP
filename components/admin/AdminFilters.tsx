@@ -1,7 +1,7 @@
-import { REGISTRATION_STATUS_OPTIONS } from "@/lib/constants";
-import { RegistrationStatus } from "@/lib/types";
+import { REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { RegistrationStatus } from "@/types/admin/registration";
 
 type AdminFiltersProps = {
   search: string;
