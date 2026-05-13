@@ -145,7 +145,7 @@ function mapRegistrationFromFirestore(
 }
 
 function getMockFallbackMessage() {
-  return "Mostrando datos de prueba porque Firebase no esta configurado.";
+  return "Mostrando datos de prueba porque Firebase no está configurado.";
 }
 
 export async function getRegistrations(): Promise<{
@@ -206,7 +206,7 @@ export async function getRegistrationById(
       usingMockData: false,
     };
   } catch (error) {
-    console.error("Error consultando inscripcion por ID:", error);
+    console.error("Error consultando inscripción por ID:", error);
     return {
       registration: MOCK_REGISTRATIONS.find((item) => item.id === id) ?? null,
       usingMockData: true,
@@ -221,7 +221,7 @@ export async function updateRegistrationStatus(
   adminNotes: string,
 ) {
   if (!db || !isFirebaseConfigured) {
-    throw new Error("No se puede actualizar estado: Firebase no esta configurado.");
+    throw new Error("No se puede actualizar estado: Firebase no está configurado.");
   }
 
   await updateDoc(doc(db, COLLECTION_NAME, id), {
@@ -230,3 +230,4 @@ export async function updateRegistrationStatus(
     updatedAt: serverTimestamp(),
   });
 }
+

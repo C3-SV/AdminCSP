@@ -114,11 +114,7 @@ export default function AdminEstadisticasPage() {
               <h2 className="font-display text-lg font-semibold text-csp-primary">
                 Distribución por categoría
               </h2>
-              <BarRow
-                label="Colegios"
-                total={totals.total}
-                value={totals.colegios}
-              />
+              <BarRow label="Colegios" total={totals.total} value={totals.colegios} />
               <BarRow
                 label="Universidades"
                 total={totals.total}
@@ -130,7 +126,11 @@ export default function AdminEstadisticasPage() {
               <h2 className="font-display text-lg font-semibold text-csp-primary">
                 Distribución por estado
               </h2>
-              <BarRow label="Recibidas" total={totals.total} value={countByStatus(registrations, "recibida")} />
+              <BarRow
+                label="Recibidas"
+                total={totals.total}
+                value={countByStatus(registrations, "recibida")}
+              />
               <BarRow label="En revisión" total={totals.total} value={totals.enRevision} />
               <BarRow label="Aprobadas" total={totals.total} value={totals.aprobadas} />
               <BarRow label="Rechazadas" total={totals.total} value={totals.rechazadas} />
@@ -160,3 +160,4 @@ export default function AdminEstadisticasPage() {
     </div>
   );
 }
+

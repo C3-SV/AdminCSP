@@ -76,3 +76,4 @@ export function RegistrationsTable({ registrations }: RegistrationsTableProps) {
     </div>
   );
 }
+

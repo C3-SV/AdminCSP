@@ -19,20 +19,20 @@ export function AdminAuthStatusCard() {
         Auth admin (Google + allowlist)
       </h2>
       <p className="text-sm">
-        <strong>Sesion Google:</strong> {user ? "Activa" : "Sin sesion"}
+        <strong>Sesión Google:</strong> {user ? "Activa" : "Sin sesión"}
       </p>
       <p className="text-sm">
         <strong>Correo:</strong> {user?.email ?? "-"}
       </p>
       <p className="text-sm">
-        <strong>Verificacion auth:</strong> {loadingAuth ? "En proceso" : "Completada"}
+        <strong>Verificación auth:</strong> {loadingAuth ? "En proceso" : "Completada"}
       </p>
       <p className="text-sm">
-        <strong>Verificacion allowlist:</strong>{" "}
+        <strong>Verificación allowlist:</strong>{" "}
         {loadingAuthorization ? "En proceso" : "Completada"}
       </p>
       <p className="text-sm">
-        <strong>Autorizado:</strong> {isAuthorizedAdmin ? "Si" : "No"}
+        <strong>Autorizado:</strong> {isAuthorizedAdmin ? "Sí" : "No"}
       </p>
       <p className="text-sm">
         <strong>Rol:</strong> {adminProfile?.role ?? "-"}
@@ -45,4 +45,3 @@ export function AdminAuthStatusCard() {
     </Card>
   );
 }
-

@@ -34,13 +34,13 @@ export function RegistrationDetail({
     variant: "success" | "error" | "info";
   } | null>(null);
 
-  // TODO: Proteger esta vista con autenticacion admin antes de produccion.
+  // TODO: Proteger esta vista con autenticación admin antes de producción.
   // TODO: Revisar privacidad de archivos y uso de URLs privadas/firmadas.
 
   const handleSave = async () => {
     if (usingMockData) {
       setToast({
-        message: "Modo prueba: Firebase no esta configurado, no se guardaron cambios.",
+        message: "Modo prueba: Firebase no está configurado, no se guardaron cambios.",
         variant: "info",
       });
       return;
@@ -69,16 +69,16 @@ export function RegistrationDetail({
       <div className="space-y-4 lg:col-span-2">
         <Card className="space-y-2">
           <h2 className="font-display text-xl font-semibold text-csp-primary">
-            Informacion general
+            Información general
           </h2>
           <p className="text-sm">
             <strong>Equipo:</strong> {registration.teamName}
           </p>
           <p className="text-sm">
-            <strong>Categoria:</strong> {registration.category}
+            <strong>Categoría:</strong> {registration.category}
           </p>
           <p className="text-sm">
-            <strong>Institucion:</strong> {registration.institution}
+            <strong>Institución:</strong> {registration.institution}
           </p>
           <p className="text-sm">
             <strong>OmegaUp del equipo:</strong> {registration.teamOmegaUpUser || "-"}
@@ -122,7 +122,7 @@ export function RegistrationDetail({
                   <strong>WhatsApp:</strong> {member.whatsapp || "-"}
                 </p>
                 <p>
-                  <strong>Carrera / Anio:</strong>{" "}
+                  <strong>Carrera / Año:</strong>{" "}
                   {member.career ? `${member.career} / ${member.universityYear}` : "-"}
                 </p>
                 <p>
@@ -139,10 +139,10 @@ export function RegistrationDetail({
                       <strong>Documento:</strong> {member.studentIdFile.fileName}
                     </p>
                     <p>
-                      <strong>Tamano:</strong> {formatBytes(member.studentIdFile.fileSize)}
+                      <strong>Tamaño:</strong> {formatBytes(member.studentIdFile.fileSize)}
                     </p>
                     <p>
-                      <strong>Provider:</strong> {member.studentIdFile.provider}
+                      <strong>Proveedor:</strong> {member.studentIdFile.provider}
                     </p>
                     <a
                       className="font-semibold text-csp-blue hover:underline"
@@ -177,16 +177,16 @@ export function RegistrationDetail({
               <strong>Correo:</strong> {registration.responsible.email}
             </p>
             <p>
-              <strong>Telefono:</strong> {registration.responsible.phone}
+              <strong>Teléfono:</strong> {registration.responsible.phone}
             </p>
             <p>
-              <strong>Institucion:</strong> {registration.responsible.institution}
+              <strong>Institución:</strong> {registration.responsible.institution}
             </p>
             <p>
               <strong>Rol:</strong> {registration.responsible.role || "-"}
             </p>
             <p>
-              <strong>Relacion:</strong> {registration.responsible.relationship}
+              <strong>Relación:</strong> {registration.responsible.relationship}
             </p>
           </Card>
         ) : null}
@@ -196,7 +196,7 @@ export function RegistrationDetail({
             Documentos y consentimientos
           </h3>
           <p>
-            <strong>Revision de datos:</strong>{" "}
+            <strong>Revisión de datos:</strong>{" "}
             {registration.consents.dataReviewAccepted ? "Aceptado" : "No aceptado"}
           </p>
           <p>
@@ -204,7 +204,7 @@ export function RegistrationDetail({
             {registration.consents.privacyAccepted ? "Aceptado" : "No aceptado"}
           </p>
           <p>
-            <strong>Consentimiento imagen universidad:</strong>{" "}
+            <strong>Consentimiento de imagen universidad:</strong>{" "}
             {registration.consents.universityImageConsentAccepted
               ? "Aceptado"
               : "No aplica / no aceptado"}
@@ -232,14 +232,14 @@ export function RegistrationDetail({
               <p>No hay archivos de consentimiento escolar.</p>
             )
           ) : (
-            <p>La categoria universidades usa consentimiento por checkbox.</p>
+            <p>La categoría universidades usa consentimiento por checkbox.</p>
           )}
         </Card>
       </div>
 
       <Card className="h-fit space-y-4">
         <h3 className="font-display text-lg font-semibold text-csp-primary">
-          Gestion de inscripcion
+          Gestión de inscripción
         </h3>
         <Select
           id="status"
@@ -262,3 +262,4 @@ export function RegistrationDetail({
     </div>
   );
 }
+

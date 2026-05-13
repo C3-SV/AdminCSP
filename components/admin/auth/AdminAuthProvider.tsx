@@ -73,7 +73,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       if (!nextUser.email) {
         setAdminProfile(null);
         setLoadingAuthorization(false);
-        setAuthError("Tu cuenta no tiene correo disponible para validacion.");
+        setAuthError("Tu cuenta no tiene correo disponible para validación.");
         void signOut(firebaseAuth);
         return;
       }
@@ -94,7 +94,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
           if (!authorizationResult.authorized || !authorizationResult.entry) {
             setAdminProfile(null);
-            setAuthError("Tu correo no esta autorizado para ingresar al panel admin.");
+            setAuthError("Tu correo no está autorizado para ingresar al panel admin.");
             await signOut(firebaseAuth);
             return;
           }
@@ -105,7 +105,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          console.error("No se pudo validar autorizacion admin:", error);
+          console.error("No se pudo validar autorización admin:", error);
           setAdminProfile(null);
           if (
             typeof error === "object" &&
@@ -113,7 +113,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             "code" in error &&
             error.code === "permission-denied"
           ) {
-            setAuthError("Tu correo no esta autorizado para ingresar al panel admin.");
+            setAuthError("Tu correo no está autorizado para ingresar al panel admin.");
           } else {
             setAuthError("No se pudo validar tu acceso admin. Intenta nuevamente.");
           }
@@ -135,7 +135,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = useCallback(async () => {
     const firebaseAuth = auth;
     if (!firebaseAuth) {
-      throw new Error("Firebase Auth no esta disponible. Revisa la configuracion.");
+      throw new Error("Firebase Auth no está disponible. Revisa la configuración.");
     }
 
     setAuthError("");

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { adminPath } from "@/lib/admin/routes";
@@ -30,7 +30,7 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-4">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            GestiÃ³n de inscripciones
+            Gestión de inscripciones
           </h2>
           <p className="mt-1 text-sm text-csp-black/70">
             Revisa equipos, estados y documentos.
@@ -44,21 +44,21 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
         </Card>
         <Card className="p-4">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            EstadÃ­sticas
+            Estadísticas
           </h2>
           <p className="mt-1 text-sm text-csp-black/70">
-            Consulta distribuciÃ³n por categorÃ­a y estado.
+            Consulta distribución por categoría y estado.
           </p>
           <Link
             className="mt-3 inline-block text-sm font-semibold text-csp-blue hover:underline"
             href={adminPath("/estadisticas")}
           >
-            Ver estadÃ­sticas
+            Ver estadísticas
           </Link>
         </Card>
         <Card className="p-4">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            ConfiguraciÃ³n
+            Configuración
           </h2>
           <p className="mt-1 text-sm text-csp-black/70">
             Estado de Firebase e integraciones futuras.
@@ -67,7 +67,7 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
             className="mt-3 inline-block text-sm font-semibold text-csp-blue hover:underline"
             href={adminPath("/configuracion")}
           >
-            Ver configuraciÃ³n
+            Ver configuración
           </Link>
         </Card>
       </div>

@@ -21,8 +21,8 @@ export function AdminLoginCard() {
     } catch (error) {
       setLocalError(
         error instanceof Error
-          ? "No se pudo iniciar sesion con Google. Intenta nuevamente."
-          : "No se pudo iniciar sesion con Google.",
+          ? "No se pudo iniciar sesión con Google. Intenta nuevamente."
+          : "No se pudo iniciar sesión con Google.",
       );
     } finally {
       setIsSubmitting(false);
@@ -39,8 +39,8 @@ export function AdminLoginCard() {
           Acceso administrador
         </h1>
         <p className="text-sm text-csp-black/70">
-          Inicia sesion con Google para gestionar las inscripciones de la Copa
-          Salvadorena de Programacion 2026.
+          Inicia sesión con Google para gestionar las inscripciones de la Copa
+          Salvadoreña de Programación 2026.
         </p>
       </div>
 
@@ -64,4 +64,3 @@ export function AdminLoginCard() {
     </Card>
   );
 }
-

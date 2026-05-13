@@ -87,7 +87,7 @@ export default function AdminAutorizadosPage() {
   const handleAddEntry = async () => {
     const normalizedEmail = normalizeAdminEmail(newEmail);
     if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
-      setToast({ message: "Ingresa un correo valido.", variant: "error" });
+      setToast({ message: "Ingresa un correo válido.", variant: "error" });
       return;
     }
 

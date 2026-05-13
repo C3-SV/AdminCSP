@@ -35,7 +35,7 @@ type UpdateAllowlistActiveInput = {
 
 function ensureFirestoreConfigured() {
   if (!db || !isFirebaseConfigured) {
-    throw new Error("Firestore no esta disponible. Revisa la configuracion de Firebase.");
+    throw new Error("Firestore no está disponible. Revisa la configuración de Firebase.");
   }
 }
 

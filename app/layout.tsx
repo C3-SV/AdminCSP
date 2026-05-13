@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Panel Administrativo | Copa Salvadorena de Programacion 2026",
+  title: "Panel Administrativo | Copa Salvadoreña de Programación 2026",
   description: "Panel administrativo de inscripciones para la CSP 2026.",
 };
 
