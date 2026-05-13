@@ -8,16 +8,16 @@ import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { ADMIN_ROUTES, isAdminRootPath } from "@/lib/admin/routes";
 
 export function AdminAuthGate({ children }: { children: ReactNode }) {
-  const { user, loading } = useAdminAuth();
+  const { user, loading, isAuthorizedAdmin } = useAdminAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
-    if (!user && !isAdminRootPath(pathname)) {
+    if ((!user || !isAuthorizedAdmin) && !isAdminRootPath(pathname)) {
       router.replace(ADMIN_ROUTES.root);
     }
-  }, [loading, pathname, router, user]);
+  }, [isAuthorizedAdmin, loading, pathname, router, user]);
 
   if (loading) {
     return (
@@ -29,7 +29,7 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) {
+  if (!user || !isAuthorizedAdmin) {
     if (isAdminRootPath(pathname)) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-csp-background px-4 py-10">

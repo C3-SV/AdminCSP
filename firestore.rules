@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function hasAuthEmail() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email is string;
+    }
+
+    function authEmail() {
+      return request.auth.token.email;
+    }
+
+    function requesterEntryPath() {
+      return /databases/$(database)/documents/admin_allowlist/$(authEmail());
+    }
+
+    function requesterEntry() {
+      return get(requesterEntryPath()).data;
+    }
+
+    function isAuthorizedAdmin() {
+      return hasAuthEmail()
+        && exists(requesterEntryPath())
+        && requesterEntry().active == true;
+    }
+
+    function isOwner() {
+      return isAuthorizedAdmin() && requesterEntry().role == "owner";
+    }
+
+    function allowlistFieldsAreValid() {
+      return request.resource.data.keys().hasOnly([
+        "email",
+        "role",
+        "active",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy",
+      ]) && request.resource.data.keys().hasAll([
+        "email",
+        "role",
+        "active",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy",
+      ]);
+    }
+
+    function allowlistTypesAreValid() {
+      return request.resource.data.email is string
+        && request.resource.data.role is string
+        && request.resource.data.active is bool
+        && request.resource.data.createdBy is string
+        && request.resource.data.updatedBy is string
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function allowlistDataMatchesPath(emailId) {
+      return request.resource.data.email == emailId
+        && (
+          request.resource.data.role == "owner"
+          || request.resource.data.role == "admin"
+        );
+    }
+
+    match /admin_allowlist/{emailId} {
+      // Any authenticated user can read only their own allowlist document.
+      allow get: if hasAuthEmail()
+        && resource.data.email is string
+        && resource.data.email == authEmail();
+
+      // Only owners can list all allowlist documents.
+      allow list: if isOwner();
+
+      // Only owners can create/update entries.
+      allow create: if isOwner()
+        && allowlistFieldsAreValid()
+        && allowlistTypesAreValid()
+        && allowlistDataMatchesPath(emailId);
+      allow update: if isOwner()
+        && allowlistFieldsAreValid()
+        && allowlistTypesAreValid()
+        && allowlistDataMatchesPath(emailId);
+      allow delete: if false;
+    }
+
+    match /registrations/{registrationId} {
+      allow read: if isAuthorizedAdmin();
+      allow update: if isAuthorizedAdmin();
+      allow create: if true;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

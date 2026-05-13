@@ -13,6 +13,7 @@ export const ADMIN_ROUTES = {
   inscripciones: adminPath("/inscripciones"),
   estadisticas: adminPath("/estadisticas"),
   configuracion: adminPath("/configuracion"),
+  autorizados: adminPath("/autorizados"),
 };
 
 export function isAdminRootPath(pathname: string) {

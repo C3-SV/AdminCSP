@@ -1,31 +1,28 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 
 export function AdminLoginCard() {
-  const { login } = useAdminAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { loginWithGoogle, authError, clearAuthError } = useAdminAuth();
+  const [localError, setLocalError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
+  const handleGoogleLogin = async () => {
+    setLocalError("");
+    clearAuthError();
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-    } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? "No se pudo iniciar sesion. Verifica correo y contrasena."
-          : "No se pudo iniciar sesion.",
+      await loginWithGoogle();
+    } catch (error) {
+      setLocalError(
+        error instanceof Error
+          ? "No se pudo iniciar sesion con Google. Intenta nuevamente."
+          : "No se pudo iniciar sesion con Google.",
       );
     } finally {
       setIsSubmitting(false);
@@ -42,39 +39,29 @@ export function AdminLoginCard() {
           Acceso administrador
         </h1>
         <p className="text-sm text-csp-black/70">
-          Inicia sesion para gestionar las inscripciones de la Copa Salvadoreña de
-          Programación 2026.
+          Inicia sesion con Google para gestionar las inscripciones de la Copa
+          Salvadorena de Programacion 2026.
         </p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <Input
-          id="admin-email"
-          label="Correo"
-          onChange={(event) => setEmail(event.target.value)}
-          required
-          type="email"
-          value={email}
-        />
-        <Input
-          id="admin-password"
-          label="Contrasena"
-          onChange={(event) => setPassword(event.target.value)}
-          required
-          type="password"
-          value={password}
-        />
-
-        {error ? (
+      <div className="space-y-4">
+        {authError ? (
           <p className="rounded-md border border-csp-error/30 bg-csp-error/10 px-3 py-2 text-sm text-csp-error">
-            {error}
+            {authError}
           </p>
         ) : null}
 
-        <Button className="w-full" isLoading={isSubmitting} type="submit">
-          Iniciar sesion
+        {localError ? (
+          <p className="rounded-md border border-csp-error/30 bg-csp-error/10 px-3 py-2 text-sm text-csp-error">
+            {localError}
+          </p>
+        ) : null}
+
+        <Button className="w-full" isLoading={isSubmitting} onClick={handleGoogleLogin} type="button">
+          Continuar con Google
         </Button>
-      </form>
+      </div>
     </Card>
   );
 }
+

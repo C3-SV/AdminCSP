@@ -1,3 +1,4 @@
+import { AdminAuthStatusCard } from "@/components/admin/auth/AdminAuthStatusCard";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
 import {
@@ -17,19 +18,17 @@ export default function AdminConfiguracionPage() {
   return (
     <div className="space-y-4">
       <AdminTopbar
-        subtitle="Estado de configuración del módulo y próximos pasos."
-        title="Configuración"
+        subtitle="Estado de configuracion del modulo y proximos pasos."
+        title="Configuracion"
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="space-y-2">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            Información del evento
+            Informacion del evento
           </h2>
           <p className="text-sm text-csp-black/80">{EVENT_NAME}</p>
-          <p className="text-sm text-csp-black/70">
-            Fase en línea: {ONLINE_PHASE_DATE}
-          </p>
+          <p className="text-sm text-csp-black/70">Fase en linea: {ONLINE_PHASE_DATE}</p>
           <p className="text-sm text-csp-black/70">
             Fase presencial colegios: {SCHOOL_PRESENTIAL_DATE}
           </p>
@@ -39,20 +38,17 @@ export default function AdminConfiguracionPage() {
         </Card>
 
         <Card className="space-y-2">
-          <h2 className="font-display text-lg font-semibold text-csp-primary">
-            Firebase
-          </h2>
+          <h2 className="font-display text-lg font-semibold text-csp-primary">Firebase</h2>
           <p className="text-sm">
             <strong>Estado:</strong>{" "}
-            {isFirebaseConfigured ? "Configurado" : "Pendiente configuración"}
+            {isFirebaseConfigured ? "Configurado" : "Pendiente configuracion"}
           </p>
           <p className="text-sm">
             <strong>Firestore:</strong>{" "}
-            {isFirebaseConfigured ? "Listo para uso" : "Configuración incompleta"}
+            {isFirebaseConfigured ? "Listo para uso" : "Configuracion incompleta"}
           </p>
           <p className="text-sm">
-            <strong>Storage:</strong>{" "}
-            UploadThing
+            <strong>Storage:</strong> UploadThing
           </p>
           {diagnosticDetails ? (
             <p className="rounded-md bg-csp-warning/10 px-2 py-1 text-xs text-csp-black/80">
@@ -65,19 +61,23 @@ export default function AdminConfiguracionPage() {
           </p>
         </Card>
 
-        <Card className="space-y-2">
+        <AdminAuthStatusCard />
+
+        <Card className="space-y-2 lg:col-span-3">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
-            Integraciones futuras
+            Notas de seguridad
           </h2>
-          <p className="text-sm text-csp-black/70">Email automático</p>
-          <p className="text-sm text-csp-black/70">Exportación avanzada</p>
-          <p className="text-sm text-csp-black/70">Autenticación admin</p>
-          <p className="text-xs text-csp-black/60">
-            TODO: Proteger rutas admin y revisar privacidad/permisos de documentos en
-            producción.
+          <p className="text-sm text-csp-black/70">
+            El acceso admin usa Google Sign-In y una allowlist en Firestore
+            (`admin_allowlist`).
+          </p>
+          <p className="text-sm text-csp-black/70">
+            Antes de endurecer reglas en produccion, crea manualmente el primer owner
+            desde Firebase Console para bootstrap inicial.
           </p>
         </Card>
       </div>
     </div>
   );
 }
+

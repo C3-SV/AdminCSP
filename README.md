@@ -57,6 +57,44 @@ Notas:
 - `NEXT_PUBLIC_*` se usan para la configuracion del cliente Firebase.
 - `UPLOADTHING_TOKEN` es opcional y solo se usa como diagnostico en la pagina de configuracion.
 
+## Auth admin (Google + allowlist)
+
+- El panel `/admin` usa **Google Sign-In**.
+- Solo entra un usuario cuyo correo exista y este activo en la coleccion `admin_allowlist`.
+- Roles permitidos en `admin_allowlist`:
+  - `owner`: puede administrar la allowlist desde el panel.
+  - `admin`: puede usar el panel, pero no administrar allowlist.
+
+### Estructura recomendada de `admin_allowlist/{email_normalizado}`
+
+```json
+{
+  "email": "owner@dominio.com",
+  "role": "owner",
+  "active": true,
+  "createdAt": "<timestamp>",
+  "updatedAt": "<timestamp>",
+  "createdBy": "owner@dominio.com",
+  "updatedBy": "owner@dominio.com"
+}
+```
+
+### Bootstrap inicial (obligatorio)
+
+Antes de aplicar reglas estrictas:
+
+1. Crea manualmente en Firebase Console el primer documento owner en `admin_allowlist`.
+2. Usa el correo en minusculas como ID del documento.
+3. Luego ingresa al panel y administra el resto de correos desde `/admin/autorizados`.
+
+### Reglas de Firestore
+
+Este repo incluye `firestore.rules` con estas politicas:
+
+- `admin_allowlist`: lectura propia, listado/escritura solo para `owner`.
+- `registrations`: `read`/`update` solo para admins autorizados.
+- `registrations.create`: se mantiene abierto (`true`) para no romper flujo publico actual.
+
 ## Scripts
 
 - `npm run dev`: servidor de desarrollo
@@ -80,4 +118,4 @@ npm run build
 - Dominio objetivo: `admin.copa.c3.com.sv`
 - Configura todas las variables de entorno antes del build.
 
-Si esta carpeta viene de otro repo, crea un repo nuevo para `AdminCSP` y apunta su `origin` al nuevo remoto antes de publicar.
+Si esta carpeta viene de otro repo, crea un repo nuevo para `AdminCSP` y apunta su `origin` al nuevo remoto antes de publicar
