@@ -14,12 +14,20 @@ const REGISTRATIONS_COLLECTION = "registrations";
 const EMAIL_OUTBOX_COLLECTION = "emailOutbox";
 const TEMPLATE_KEY = "registration_confirmation";
 const MAX_ATTEMPTS = 3;
-const FALLBACK_EVENT_NAME = "Copa Salvadoreña de Programación";
-const FALLBACK_NEXT_STEP =
-  "Tu registro será revisado por el equipo organizador. Más adelante recibirás información sobre las siguientes etapas.";
 
 type RegistrationPayload = Record<string, unknown>;
 type OutboxStatus = "processing" | "sent" | "failed";
+type RegistrationEmailTemplateMember = {
+  TEAM_MEMBER_NAME: string;
+};
+type RegistrationEmailTemplateParams = {
+  TEAM_NAME: string;
+  OMEGAUP_USER: string;
+  INSTITUTION: string;
+  items: RegistrationEmailTemplateMember[];
+  HAS_COACH: boolean;
+  COACH_NAME: string;
+};
 
 type OutboxRecord = {
   eventId: string;
@@ -29,7 +37,7 @@ type OutboxRecord = {
   recipientType: "captain";
   templateKey: string;
   brevoTemplateId: number;
-  payload: Record<string, string>;
+  payload: RegistrationEmailTemplateParams;
   status: OutboxStatus;
   attempts: number;
   maxAttempts: number;
@@ -117,6 +125,13 @@ function combineName(firstName: string, lastName: string) {
   return `${firstName} ${lastName}`.trim();
 }
 
+function getMemberDisplayName(member: Record<string, unknown>) {
+  return (
+    combineName(getString(member.firstName), getString(member.lastName)) ||
+    getString(member.name)
+  );
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 }
@@ -173,14 +188,36 @@ function mapRegistrationEmailData(registration: RegistrationPayload) {
   const eventName = getString(registration.eventName) || getString(event.name);
   const eventDate = toDisplayDate(registration.eventDate || event.date);
   const teamName = getString(registration.teamName) || getString(team.name);
+  const omegaUpUser =
+    getString(registration.teamOmegaUpUser) ||
+    getString(team.omegaUpUser) ||
+    getString(team.omegaupUser) ||
+    getString(team.omega_up_user);
+  const institution =
+    getString(registration.institution) ||
+    getString(team.institution) ||
+    getString(responsible.institution);
+  const items = members
+    .map((member) => asRecord(member))
+    .map((member) => getMemberDisplayName(member))
+    .filter((memberName): memberName is string => Boolean(memberName))
+    .slice(0, 4)
+    .map((memberName) => ({
+      TEAM_MEMBER_NAME: memberName,
+    }));
+  const coachName =
+    combineName(getString(responsible.firstName), getString(responsible.lastName)) ||
+    getString(responsible.name);
+  const hasCoach = Boolean(coachName);
   const captainName = rawCaptainName || "Participante";
 
-  const payload = {
-    NOMBRE: captainName,
-    EQUIPO: teamName,
-    EVENTO: eventName || FALLBACK_EVENT_NAME,
-    FECHA: eventDate,
-    SIGUIENTE_PASO: FALLBACK_NEXT_STEP,
+  const payload: RegistrationEmailTemplateParams = {
+    TEAM_NAME: teamName,
+    OMEGAUP_USER: omegaUpUser,
+    INSTITUTION: institution,
+    items,
+    HAS_COACH: hasCoach,
+    COACH_NAME: hasCoach ? coachName : "",
   };
 
   return {
@@ -188,10 +225,15 @@ function mapRegistrationEmailData(registration: RegistrationPayload) {
     eventName,
     eventDate,
     teamName,
+    omegaUpUser,
+    institution,
+    itemsCount: items.length,
     captainName,
     captainEmail: captainEmail.toLowerCase(),
     hasCaptainName: Boolean(rawCaptainName),
     hasTeamName: Boolean(teamName),
+    hasOmegaUpUser: Boolean(omegaUpUser),
+    hasValidMembers: items.length > 0,
     payload,
   };
 }
@@ -311,14 +353,43 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!mapped.hasCaptainName || !mapped.hasTeamName) {
+    if (!mapped.hasTeamName) {
       logRegistrationEmailEvent("info", "registration.missing_required_email_data", {
         requestId,
         origin,
         registrationId,
+        missingField: "TEAM_NAME",
       });
       return jsonResponse(
-        { ok: false, message: "Registration is missing required email data." },
+        { ok: false, message: "Registration is missing TEAM_NAME." },
+        400,
+        origin,
+      );
+    }
+
+    if (!mapped.hasOmegaUpUser) {
+      logRegistrationEmailEvent("info", "registration.missing_required_email_data", {
+        requestId,
+        origin,
+        registrationId,
+        missingField: "OMEGAUP_USER",
+      });
+      return jsonResponse(
+        { ok: false, message: "Registration is missing OMEGAUP_USER." },
+        400,
+        origin,
+      );
+    }
+
+    if (!mapped.hasValidMembers) {
+      logRegistrationEmailEvent("info", "registration.missing_required_email_data", {
+        requestId,
+        origin,
+        registrationId,
+        missingField: "items",
+      });
+      return jsonResponse(
+        { ok: false, message: "Registration has no valid team members." },
         400,
         origin,
       );
@@ -430,6 +501,8 @@ export async function POST(request: Request) {
       origin,
       registrationId,
       templateId,
+      hasCoach: mapped.payload.HAS_COACH,
+      itemsCount: mapped.itemsCount,
       recipientEmailDomain: mapped.captainEmail.split("@")[1] ?? null,
     });
 
