@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
+import type { TransactionalEmailType } from "@/lib/email/transactionalEmail";
 import {
   getAllowedOrigins as getConfiguredAllowedOrigins,
   getRegistrationConfirmationEnvStatus,
@@ -12,7 +13,7 @@ export const runtime = "nodejs";
 
 const REGISTRATIONS_COLLECTION = "registrations";
 const EMAIL_OUTBOX_COLLECTION = "emailOutbox";
-const TEMPLATE_KEY = "registration_confirmation";
+const TEMPLATE_KEY: TransactionalEmailType = "registration_confirmation";
 const MAX_ATTEMPTS = 3;
 
 type RegistrationPayload = Record<string, unknown>;

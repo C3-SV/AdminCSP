@@ -9,8 +9,12 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
+import { buildEmailQueueDraft } from "@/services/admin/emailQueue";
 import { MOCK_REGISTRATIONS } from "@/services/admin/mock-data";
 import {
+  CompetitivePhase,
+  CompetitiveStatus,
+  RegistrationCategory,
   RegistrationDocument,
   RegistrationDocumentMember,
   RegistrationStatus,
@@ -18,6 +22,38 @@ import {
 } from "@/types/admin/registration";
 
 const COLLECTION_NAME = "registrations";
+
+export type DisplayCompetitivePhase = CompetitivePhase | "pendiente";
+export type DisplayCompetitiveStatus = CompetitiveStatus | "pendiente";
+
+export type RegistrationCompetitiveView = {
+  faseActualMostrada: DisplayCompetitivePhase;
+  estadoCompetitivoMostrado: DisplayCompetitiveStatus;
+  defaultsAplicados: {
+    faseActual: boolean;
+    estadoCompetitivo: boolean;
+  };
+};
+
+type UpdateRegistrationCompetitiveStateInput = {
+  id: string;
+  faseActual: CompetitivePhase;
+  estadoCompetitivo: CompetitiveStatus;
+  updatedBy?: string;
+};
+
+type UpdateRegistrationScoresInput = {
+  id: string;
+  puntajeOnline?: number | null;
+  puntajePresencial?: number | null;
+  puntajeFinal?: number | null;
+  rankingOnline?: number | null;
+  rankingPresencial?: number | null;
+  posicionFinal?: number | null;
+  fechaPresencial?: string | null;
+  sedePresencial?: string | null;
+  updatedBy?: string;
+};
 
 function toISODate(value: unknown): string | undefined {
   if (!value) return undefined;
@@ -31,6 +67,25 @@ function toISODate(value: unknown): string | undefined {
     return value.toDate().toISOString();
   }
   return undefined;
+}
+
+function toNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toNullableString(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function mapUploadthingMetadata(value: unknown): UploadedFileMetadata | undefined {
@@ -138,14 +193,66 @@ function mapRegistrationFromFirestore(
       schoolImageConsentFiles,
     },
     status: (data.status as RegistrationStatus) ?? "recibida",
+    faseActual: (data.faseActual as CompetitivePhase | null | undefined) ?? null,
+    estadoCompetitivo:
+      (data.estadoCompetitivo as CompetitiveStatus | null | undefined) ?? null,
+    puntajeOnline: toNullableNumber(data.puntajeOnline),
+    puntajePresencial: toNullableNumber(data.puntajePresencial),
+    puntajeFinal: toNullableNumber(data.puntajeFinal),
+    rankingOnline: toNullableNumber(data.rankingOnline),
+    rankingPresencial: toNullableNumber(data.rankingPresencial),
+    posicionFinal: toNullableNumber(data.posicionFinal),
+    fechaPresencial: toNullableString(data.fechaPresencial),
+    sedePresencial: toNullableString(data.sedePresencial),
     adminNotes: typeof data.adminNotes === "string" ? data.adminNotes : "",
     createdAt: toISODate(data.createdAt),
     updatedAt: toISODate(data.updatedAt),
+    updatedBy: typeof data.updatedBy === "string" ? data.updatedBy : undefined,
   };
 }
 
 function getMockFallbackMessage() {
-  return "Mostrando datos de prueba porque Firebase no está configurado.";
+  return "Mostrando datos de prueba porque Firebase no esta configurado.";
+}
+
+function buildAuditPayload(updatedBy?: string) {
+  const payload: Record<string, unknown> = {
+    updatedAt: serverTimestamp(),
+  };
+
+  if (typeof updatedBy === "string" && updatedBy.trim()) {
+    payload.updatedBy = updatedBy.trim().toLowerCase();
+  }
+
+  return payload;
+}
+
+export function resolveRegistrationCompetitiveView(
+  registration: RegistrationDocument,
+): RegistrationCompetitiveView {
+  const approved = registration.status === "aprobada";
+  const hasStoredPhase = Boolean(registration.faseActual);
+  const hasStoredStatus = Boolean(registration.estadoCompetitivo);
+
+  if (!approved) {
+    return {
+      faseActualMostrada: "pendiente",
+      estadoCompetitivoMostrado: "pendiente",
+      defaultsAplicados: {
+        faseActual: false,
+        estadoCompetitivo: false,
+      },
+    };
+  }
+
+  return {
+    faseActualMostrada: registration.faseActual ?? "online",
+    estadoCompetitivoMostrado: registration.estadoCompetitivo ?? "participando",
+    defaultsAplicados: {
+      faseActual: !hasStoredPhase,
+      estadoCompetitivo: !hasStoredStatus,
+    },
+  };
 }
 
 export async function getRegistrations(): Promise<{
@@ -180,6 +287,16 @@ export async function getRegistrations(): Promise<{
   }
 }
 
+export async function getRegistrationsByCategory(category: RegistrationCategory) {
+  const response = await getRegistrations();
+  return {
+    ...response,
+    registrations: response.registrations.filter(
+      (registration) => registration.category === category,
+    ),
+  };
+}
+
 export async function getRegistrationById(
   id: string,
 ): Promise<{
@@ -206,7 +323,7 @@ export async function getRegistrationById(
       usingMockData: false,
     };
   } catch (error) {
-    console.error("Error consultando inscripción por ID:", error);
+    console.error("Error consultando inscripcion por ID:", error);
     return {
       registration: MOCK_REGISTRATIONS.find((item) => item.id === id) ?? null,
       usingMockData: true,
@@ -219,15 +336,130 @@ export async function updateRegistrationStatus(
   id: string,
   status: RegistrationStatus,
   adminNotes: string,
+  updatedBy?: string,
 ) {
   if (!db || !isFirebaseConfigured) {
-    throw new Error("No se puede actualizar estado: Firebase no está configurado.");
+    throw new Error("No se puede actualizar estado: Firebase no esta configurado.");
   }
 
   await updateDoc(doc(db, COLLECTION_NAME, id), {
     status,
     adminNotes,
-    updatedAt: serverTimestamp(),
+    ...buildAuditPayload(updatedBy),
   });
 }
 
+export async function updateRegistrationCompetitiveState({
+  id,
+  faseActual,
+  estadoCompetitivo,
+  updatedBy,
+}: UpdateRegistrationCompetitiveStateInput) {
+  if (!db || !isFirebaseConfigured) {
+    throw new Error(
+      "No se puede actualizar fase competitiva: Firebase no esta configurado.",
+    );
+  }
+
+  await updateDoc(doc(db, COLLECTION_NAME, id), {
+    faseActual,
+    estadoCompetitivo,
+    ...buildAuditPayload(updatedBy),
+  });
+}
+
+export async function updateRegistrationScores({
+  id,
+  puntajeOnline,
+  puntajePresencial,
+  puntajeFinal,
+  rankingOnline,
+  rankingPresencial,
+  posicionFinal,
+  fechaPresencial,
+  sedePresencial,
+  updatedBy,
+}: UpdateRegistrationScoresInput) {
+  if (!db || !isFirebaseConfigured) {
+    throw new Error("No se puede actualizar puntajes: Firebase no esta configurado.");
+  }
+
+  const payload: Record<string, unknown> = {
+    ...buildAuditPayload(updatedBy),
+  };
+
+  if (puntajeOnline !== undefined) payload.puntajeOnline = puntajeOnline;
+  if (puntajePresencial !== undefined) payload.puntajePresencial = puntajePresencial;
+  if (puntajeFinal !== undefined) payload.puntajeFinal = puntajeFinal;
+  if (rankingOnline !== undefined) payload.rankingOnline = rankingOnline;
+  if (rankingPresencial !== undefined) payload.rankingPresencial = rankingPresencial;
+  if (posicionFinal !== undefined) payload.posicionFinal = posicionFinal;
+  if (fechaPresencial !== undefined) payload.fechaPresencial = fechaPresencial;
+  if (sedePresencial !== undefined) payload.sedePresencial = sedePresencial;
+
+  await updateDoc(doc(db, COLLECTION_NAME, id), payload);
+}
+
+export async function normalizeRegistrationCompetitiveFields(
+  registration: RegistrationDocument,
+  updatedBy?: string,
+) {
+  if (!db || !isFirebaseConfigured) {
+    return;
+  }
+
+  if (registration.status !== "aprobada") {
+    return;
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (!registration.faseActual) {
+    payload.faseActual = "online";
+  }
+  if (!registration.estadoCompetitivo) {
+    payload.estadoCompetitivo = "participando";
+  }
+
+  if (!Object.keys(payload).length) {
+    return;
+  }
+
+  await updateDoc(doc(db, COLLECTION_NAME, registration.id), {
+    ...payload,
+    ...buildAuditPayload(updatedBy),
+  });
+}
+
+export function buildFutureStatusEmailQueueDraft(
+  registration: RegistrationDocument,
+  emailType: "classified_to_onsite" | "not_classified" | "finalist" | "winner",
+  createdBy?: string,
+) {
+  const recipientEmail =
+    registration.contactEmail ||
+    registration.responsible.email ||
+    registration.members.find((member) => member.email)?.email ||
+    "";
+  const recipientName =
+    registration.responsible.firstName && registration.responsible.lastName
+      ? `${registration.responsible.firstName} ${registration.responsible.lastName}`
+      : registration.teamName;
+
+  if (!recipientEmail) {
+    return null;
+  }
+
+  return buildEmailQueueDraft({
+    teamId: registration.id,
+    teamName: registration.teamName,
+    recipientEmail,
+    recipientName,
+    emailType,
+    createdBy,
+    params: {
+      TEAM_NAME: registration.teamName,
+      INSTITUTION: registration.institution,
+      CATEGORY: registration.category,
+    },
+  });
+}

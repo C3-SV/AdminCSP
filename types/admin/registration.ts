@@ -1,4 +1,4 @@
-﻿export type RegistrationCategory = "colegios" | "universidades";
+export type RegistrationCategory = "colegios" | "universidades";
 
 export type RegistrationStatus =
   | "recibida"
@@ -6,6 +6,17 @@ export type RegistrationStatus =
   | "aprobada"
   | "rechazada"
   | "pendiente_correccion";
+
+export type CompetitivePhase = "online" | "presencial" | "final" | "cerrado";
+
+export type CompetitiveStatus =
+  | "pendiente"
+  | "participando"
+  | "clasificado"
+  | "no_clasificado"
+  | "finalista"
+  | "ganador"
+  | "eliminado";
 
 export type DiscoverySource =
   | "instagram"
@@ -88,8 +99,18 @@ export type RegistrationDocument = {
     schoolImageConsentFiles: UploadedFileMetadata[];
   };
   status: RegistrationStatus;
+  faseActual?: CompetitivePhase | null;
+  estadoCompetitivo?: CompetitiveStatus | null;
+  puntajeOnline?: number | null;
+  puntajePresencial?: number | null;
+  puntajeFinal?: number | null;
+  rankingOnline?: number | null;
+  rankingPresencial?: number | null;
+  posicionFinal?: number | null;
+  fechaPresencial?: string | null;
+  sedePresencial?: string | null;
   adminNotes: string;
   createdAt?: string;
   updatedAt?: string;
+  updatedBy?: string;
 };
-

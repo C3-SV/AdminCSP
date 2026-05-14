@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 import { REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -26,6 +27,7 @@ export function RegistrationDetail({
   registration,
   usingMockData,
 }: RegistrationDetailProps) {
+  const { user, adminProfile } = useAdminAuth();
   const [status, setStatus] = useState<RegistrationStatus>(registration.status);
   const [adminNotes, setAdminNotes] = useState(registration.adminNotes ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -48,7 +50,13 @@ export function RegistrationDetail({
 
     setIsSaving(true);
     try {
-      await updateRegistrationStatus(registration.id, status, adminNotes);
+      const updatedBy = (user?.email ?? adminProfile?.email ?? "").trim().toLowerCase();
+      await updateRegistrationStatus(
+        registration.id,
+        status,
+        adminNotes,
+        updatedBy || undefined,
+      );
       setToast({ message: "Cambios guardados correctamente.", variant: "success" });
     } catch (error) {
       setToast({
@@ -262,4 +270,3 @@ export function RegistrationDetail({
     </div>
   );
 }
-

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 import { Button } from "@/components/ui/Button";
 import { ADMIN_ROUTES } from "@/lib/admin/routes";
@@ -12,9 +12,11 @@ import { cn } from "@/utils/admin";
 const navItems = [
   { href: ADMIN_ROUTES.root, label: "Resumen" },
   { href: ADMIN_ROUTES.inscripciones, label: "Inscripciones" },
-  { href: ADMIN_ROUTES.estadisticas, label: "Estadísticas" },
+  { href: ADMIN_ROUTES.colegios, label: "Colegios" },
+  { href: ADMIN_ROUTES.universidades, label: "Universidades" },
+  { href: ADMIN_ROUTES.estadisticas, label: "Estadisticas" },
   { href: ADMIN_ROUTES.autorizados, label: "Autorizados" },
-  { href: ADMIN_ROUTES.configuracion, label: "Configuración" },
+  { href: ADMIN_ROUTES.configuracion, label: "Configuracion" },
 ];
 
 export function AdminSidebar() {
@@ -71,7 +73,7 @@ export function AdminSidebar() {
       </nav>
 
       <div className="mt-4 rounded-md bg-csp-soft/70 px-3 py-2 text-xs text-csp-black/70">
-        <p className="font-semibold text-csp-primary">Sesión</p>
+        <p className="font-semibold text-csp-primary">Sesion</p>
         <p className="truncate">{adminProfile?.email ?? "Sin correo"}</p>
         <p>Rol: {adminProfile?.role ?? "-"}</p>
       </div>
@@ -84,7 +86,7 @@ export function AdminSidebar() {
           type="button"
           variant="secondary"
         >
-          Cerrar sesión
+          Cerrar sesion
         </Button>
       </div>
     </aside>
