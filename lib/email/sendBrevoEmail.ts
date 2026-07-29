@@ -7,8 +7,10 @@ type BrevoRecipient = {
 
 type SendBrevoEmailInput = {
   to: BrevoRecipient;
+  cc?: BrevoRecipient[];
   templateId: number;
   params: Record<string, unknown>;
+  idempotencyKey?: string;
 };
 
 type BrevoSendEmailResponse = {
@@ -31,8 +33,10 @@ function getBrevoApiKey() {
 
 export async function sendBrevoEmail({
   to,
+  cc = [],
   templateId,
   params,
+  idempotencyKey,
 }: SendBrevoEmailInput): Promise<BrevoSendEmailResponse> {
   const apiKey = getBrevoApiKey();
 
@@ -46,6 +50,13 @@ export async function sendBrevoEmail({
     templateId,
     params,
   };
+
+  if (cc.length) {
+    body.cc = cc;
+  }
+  if (idempotencyKey) {
+    body.headers = { "Idempotency-Key": idempotencyKey };
+  }
 
   if (senderEmail) {
     body.sender = {

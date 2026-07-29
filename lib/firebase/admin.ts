@@ -1,8 +1,10 @@
 import "server-only";
 
 import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import type { Firestore } from "firebase-admin/firestore";
+import type { Auth } from "firebase-admin/auth";
 
 function getRequiredEnv(
   name: "FIREBASE_PROJECT_ID" | "FIREBASE_CLIENT_EMAIL" | "FIREBASE_PRIVATE_KEY",
@@ -37,6 +39,11 @@ export function getAdminDb() {
 
   firestoreDb = getFirestore();
   return firestoreDb;
+}
+
+export function getAdminAuth(): Auth {
+  getAdminDb();
+  return getAuth();
 }
 
 export const db = new Proxy({} as Firestore, {

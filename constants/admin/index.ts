@@ -1,6 +1,7 @@
 import {
   CompetitivePhase,
   CompetitiveStatus,
+  KnownRegistrationCategory,
   RegistrationStatus,
 } from "@/types/admin/registration";
 
@@ -10,6 +11,25 @@ export const EVENT_SHORT_NAME = "CSP 2026";
 export const ONLINE_PHASE_DATE = "1 de agosto de 2026";
 export const SCHOOL_PRESENTIAL_DATE = "15 de agosto de 2026";
 export const UNIVERSITY_PRESENTIAL_DATE = "29 de agosto de 2026";
+
+export const REGISTRATION_CATEGORY_OPTIONS: Array<{
+  value: KnownRegistrationCategory;
+  label: string;
+}> = [
+  { value: "colegios", label: "Colegios" },
+  { value: "universidades", label: "Universidades" },
+  { value: "ade", label: "AdE" },
+];
+
+export const REGISTRATION_CATEGORY_LABELS: Record<
+  KnownRegistrationCategory | "desconocida",
+  string
+> = {
+  colegios: "Colegios",
+  universidades: "Universidades",
+  ade: "AdE",
+  desconocida: "No reconocida",
+};
 
 export const REGISTRATION_STATUS_OPTIONS: Array<{
   value: RegistrationStatus;

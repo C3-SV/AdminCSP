@@ -1,15 +1,18 @@
-import { REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
+import {
+  REGISTRATION_CATEGORY_OPTIONS,
+  REGISTRATION_STATUS_OPTIONS,
+} from "@/constants/admin";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { RegistrationStatus } from "@/types/admin/registration";
+import { KnownRegistrationCategory, RegistrationStatus } from "@/types/admin/registration";
 
 type AdminFiltersProps = {
   search: string;
-  category: "all" | "colegios" | "universidades";
+  category: "all" | KnownRegistrationCategory;
   status: "all" | RegistrationStatus;
   date: string;
   onSearchChange: (value: string) => void;
-  onCategoryChange: (value: "all" | "colegios" | "universidades") => void;
+  onCategoryChange: (value: "all" | KnownRegistrationCategory) => void;
   onStatusChange: (value: "all" | RegistrationStatus) => void;
   onDateChange: (value: string) => void;
 };
@@ -37,12 +40,11 @@ export function AdminFilters({
         id="filter-category"
         label="Categoría"
         onChange={(event) =>
-          onCategoryChange(event.target.value as "all" | "colegios" | "universidades")
+          onCategoryChange(event.target.value as "all" | KnownRegistrationCategory)
         }
         options={[
           { value: "all", label: "Todas" },
-          { value: "colegios", label: "Colegios" },
-          { value: "universidades", label: "Universidades" },
+          ...REGISTRATION_CATEGORY_OPTIONS,
         ]}
         value={category}
       />
@@ -68,4 +70,3 @@ export function AdminFilters({
     </div>
   );
 }
-

@@ -14,6 +14,7 @@ const navItems = [
   { href: ADMIN_ROUTES.inscripciones, label: "Inscripciones" },
   { href: ADMIN_ROUTES.colegios, label: "Colegios" },
   { href: ADMIN_ROUTES.universidades, label: "Universidades" },
+  { href: ADMIN_ROUTES.ade, label: "AdE" },
   { href: ADMIN_ROUTES.estadisticas, label: "Estadisticas" },
   { href: ADMIN_ROUTES.autorizados, label: "Autorizados" },
   { href: ADMIN_ROUTES.configuracion, label: "Configuracion" },

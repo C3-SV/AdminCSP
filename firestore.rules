@@ -29,6 +29,25 @@ service cloud.firestore {
       return isAuthorizedAdmin() && requesterEntry().role == "owner";
     }
 
+    function registrationUpdateIsLimited() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        "status",
+        "adminNotes",
+        "faseActual",
+        "estadoCompetitivo",
+        "puntajeOnline",
+        "puntajePresencial",
+        "puntajeFinal",
+        "rankingOnline",
+        "rankingPresencial",
+        "posicionFinal",
+        "fechaPresencial",
+        "sedePresencial",
+        "updatedAt",
+        "updatedBy",
+      ]);
+    }
+
     function allowlistFieldsAreValid() {
       return request.resource.data.keys().hasOnly([
         "email",
@@ -90,7 +109,9 @@ service cloud.firestore {
 
     match /registrations/{registrationId} {
       allow read: if isAuthorizedAdmin();
-      allow update: if isAuthorizedAdmin();
+      // Canonical writes go through authenticated server routes. This rule keeps
+      // legacy/admin SDK writes constrained to known administrative fields.
+      allow update: if isAuthorizedAdmin() && registrationUpdateIsLimited();
       allow create: if true;
       allow delete: if false;
     }

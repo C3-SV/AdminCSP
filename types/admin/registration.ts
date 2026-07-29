@@ -1,4 +1,10 @@
-export type RegistrationCategory = "colegios" | "universidades";
+export type KnownRegistrationCategory = "colegios" | "universidades" | "ade";
+
+/**
+ * `desconocida` is an admin-only diagnostic value. It is never written back to
+ * Firestore; `rawCategory` preserves the original stored value for review.
+ */
+export type RegistrationCategory = KnownRegistrationCategory | "desconocida";
 
 export type RegistrationStatus =
   | "recibida"
@@ -83,6 +89,7 @@ export type RegistrationDocumentMember = {
 export type RegistrationDocument = {
   id: string;
   category: RegistrationCategory;
+  rawCategory?: string;
   teamName: string;
   institution: string;
   discoverySource: DiscoverySource | "";
@@ -90,8 +97,8 @@ export type RegistrationDocument = {
   teamDescription: string;
   teamOmegaUpUser: string;
   contactEmail?: string;
-  members: [RegistrationDocumentMember, RegistrationDocumentMember, RegistrationDocumentMember];
-  responsible: Responsible;
+  members: RegistrationDocumentMember[];
+  responsible?: Responsible;
   consents: {
     dataReviewAccepted: boolean;
     privacyAccepted: boolean;

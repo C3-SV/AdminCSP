@@ -51,7 +51,7 @@ export default function AdminEstadisticasPage() {
         return;
       }
       setRegistrations(response.registrations);
-      setMessage(response.usingMockData ? response.message ?? "" : "");
+      setMessage(response.message ?? "");
       setLoading(false);
     })();
 
@@ -63,7 +63,10 @@ export default function AdminEstadisticasPage() {
   const totals = useMemo(() => {
     const total = registrations.length;
     const colegios = registrations.filter((item) => item.category === "colegios").length;
-    const universidades = total - colegios;
+    const universidades = registrations.filter(
+      (item) => item.category === "universidades",
+    ).length;
+    const ade = registrations.filter((item) => item.category === "ade").length;
     const aprobadas = countByStatus(registrations, "aprobada");
     const enRevision = countByStatus(registrations, "en_revision");
     const rechazadas = countByStatus(registrations, "rechazada");
@@ -74,6 +77,7 @@ export default function AdminEstadisticasPage() {
       total,
       colegios,
       universidades,
+      ade,
       aprobadas,
       enRevision,
       rechazadas,
@@ -102,6 +106,7 @@ export default function AdminEstadisticasPage() {
               { label: "Total participantes", value: totals.participantes },
               { label: "Colegios", value: totals.colegios },
               { label: "Universidades", value: totals.universidades },
+              { label: "AdE", value: totals.ade },
               { label: "Aprobadas", value: totals.aprobadas },
               { label: "En revisión", value: totals.enRevision },
               { label: "Rechazadas", value: totals.rechazadas },
@@ -120,6 +125,7 @@ export default function AdminEstadisticasPage() {
                 total={totals.total}
                 value={totals.universidades}
               />
+              <BarRow label="AdE" total={totals.total} value={totals.ade} />
             </Card>
 
             <Card className="space-y-3">
@@ -160,4 +166,3 @@ export default function AdminEstadisticasPage() {
     </div>
   );
 }
-

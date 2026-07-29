@@ -9,30 +9,33 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
+import {
+  resolveRegistrationCompetitiveView,
+  type DisplayCompetitivePhase,
+  type DisplayCompetitiveStatus,
+  type RegistrationCompetitiveView,
+} from "@/lib/admin/registrationView";
 import { buildEmailQueueDraft } from "@/services/admin/emailQueue";
 import { MOCK_REGISTRATIONS } from "@/services/admin/mock-data";
 import {
   CompetitivePhase,
   CompetitiveStatus,
+  KnownRegistrationCategory,
   RegistrationCategory,
   RegistrationDocument,
   RegistrationDocumentMember,
   RegistrationStatus,
+  Responsible,
   UploadedFileMetadata,
 } from "@/types/admin/registration";
 
 const COLLECTION_NAME = "registrations";
 
-export type DisplayCompetitivePhase = CompetitivePhase | "pendiente";
-export type DisplayCompetitiveStatus = CompetitiveStatus | "pendiente";
-
-export type RegistrationCompetitiveView = {
-  faseActualMostrada: DisplayCompetitivePhase;
-  estadoCompetitivoMostrado: DisplayCompetitiveStatus;
-  defaultsAplicados: {
-    faseActual: boolean;
-    estadoCompetitivo: boolean;
-  };
+export {
+  resolveRegistrationCompetitiveView,
+  type DisplayCompetitivePhase,
+  type DisplayCompetitiveStatus,
+  type RegistrationCompetitiveView,
 };
 
 type UpdateRegistrationCompetitiveStateInput = {
@@ -41,6 +44,34 @@ type UpdateRegistrationCompetitiveStateInput = {
   estadoCompetitivo: CompetitiveStatus;
   updatedBy?: string;
 };
+
+const KNOWN_CATEGORIES = new Set<KnownRegistrationCategory>([
+  "colegios",
+  "universidades",
+  "ade",
+]);
+const REGISTRATION_STATUSES = new Set<RegistrationStatus>([
+  "recibida",
+  "en_revision",
+  "aprobada",
+  "rechazada",
+  "pendiente_correccion",
+]);
+const COMPETITIVE_PHASES = new Set<CompetitivePhase>([
+  "online",
+  "presencial",
+  "final",
+  "cerrado",
+]);
+const COMPETITIVE_STATUSES = new Set<CompetitiveStatus>([
+  "pendiente",
+  "participando",
+  "clasificado",
+  "no_clasificado",
+  "finalista",
+  "ganador",
+  "eliminado",
+]);
 
 type UpdateRegistrationScoresInput = {
   id: string;
@@ -104,25 +135,37 @@ function mapUploadthingMetadata(value: unknown): UploadedFileMetadata | undefine
   };
 }
 
-function emptyMember(index: number): RegistrationDocumentMember {
-  return {
-    id: `member-${index + 1}`,
-    firstName: "",
-    lastName: "",
-    age: 0,
-    email: "",
-    linkedin: "",
-    studentIdFile: null,
-  };
+export function normalizeRegistrationCategory(value: unknown): RegistrationCategory {
+  const rawValue = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return KNOWN_CATEGORIES.has(rawValue as KnownRegistrationCategory)
+    ? (rawValue as KnownRegistrationCategory)
+    : "desconocida";
 }
 
-function mapRegistrationFromFirestore(
+function normalizeRegistrationStatus(value: unknown): RegistrationStatus {
+  return REGISTRATION_STATUSES.has(value as RegistrationStatus)
+    ? (value as RegistrationStatus)
+    : "recibida";
+}
+
+function normalizeCompetitivePhase(value: unknown): CompetitivePhase | null {
+  return COMPETITIVE_PHASES.has(value as CompetitivePhase)
+    ? (value as CompetitivePhase)
+    : null;
+}
+
+function normalizeCompetitiveStatus(value: unknown): CompetitiveStatus | null {
+  return COMPETITIVE_STATUSES.has(value as CompetitiveStatus)
+    ? (value as CompetitiveStatus)
+    : null;
+}
+
+export function mapRegistrationFromFirestore(
   id: string,
   data: Record<string, unknown>,
 ): RegistrationDocument {
   const rawMembers = Array.isArray(data.members) ? data.members : [];
   const members: RegistrationDocumentMember[] = rawMembers
-    .slice(0, 3)
     .map((member, index): RegistrationDocumentMember => {
       const item = member as Record<string, unknown>;
       const ageNumber = typeof item.age === "number" ? item.age : Number(item.age ?? 0);
@@ -144,9 +187,10 @@ function mapRegistrationFromFirestore(
       };
     });
 
-  while (members.length < 3) {
-    members.push(emptyMember(members.length));
-  }
+  const responsibleRaw =
+    typeof data.responsible === "object" && data.responsible !== null
+      ? (data.responsible as Record<string, unknown>)
+      : null;
 
   const consentsRaw =
     typeof data.consents === "object" && data.consents !== null
@@ -161,7 +205,8 @@ function mapRegistrationFromFirestore(
 
   return {
     id,
-    category: (data.category as RegistrationDocument["category"]) ?? "colegios",
+    category: normalizeRegistrationCategory(data.category),
+    rawCategory: typeof data.category === "string" ? data.category : undefined,
     teamName: String(data.teamName ?? ""),
     institution: String(data.institution ?? ""),
     discoverySource: (data.discoverySource as RegistrationDocument["discoverySource"]) ?? "",
@@ -170,32 +215,29 @@ function mapRegistrationFromFirestore(
     teamDescription: String(data.teamDescription ?? ""),
     teamOmegaUpUser: String(data.teamOmegaUpUser ?? ""),
     contactEmail: typeof data.contactEmail === "string" ? data.contactEmail : undefined,
-    members: members as RegistrationDocument["members"],
-    responsible: {
-      firstName: String((data.responsible as Record<string, unknown>)?.firstName ?? ""),
-      lastName: String((data.responsible as Record<string, unknown>)?.lastName ?? ""),
-      email: String((data.responsible as Record<string, unknown>)?.email ?? ""),
-      phone: String((data.responsible as Record<string, unknown>)?.phone ?? ""),
-      institution: String((data.responsible as Record<string, unknown>)?.institution ?? ""),
-      role:
-        ((data.responsible as Record<string, unknown>)?.role as RegistrationDocument["responsible"]["role"]) ??
-        "",
-      relationship: String((data.responsible as Record<string, unknown>)?.relationship ?? ""),
-      comments:
-        typeof (data.responsible as Record<string, unknown>)?.comments === "string"
-          ? String((data.responsible as Record<string, unknown>)?.comments)
-          : undefined,
-    },
+    members,
+    responsible: responsibleRaw
+      ? {
+          firstName: String(responsibleRaw.firstName ?? ""),
+          lastName: String(responsibleRaw.lastName ?? ""),
+          email: String(responsibleRaw.email ?? ""),
+          phone: String(responsibleRaw.phone ?? ""),
+          institution: String(responsibleRaw.institution ?? ""),
+          role: (responsibleRaw.role as Responsible["role"]) ?? "",
+          relationship: String(responsibleRaw.relationship ?? ""),
+          comments:
+            typeof responsibleRaw.comments === "string" ? responsibleRaw.comments : undefined,
+        }
+      : undefined,
     consents: {
       dataReviewAccepted: Boolean(consentsRaw.dataReviewAccepted),
       privacyAccepted: Boolean(consentsRaw.privacyAccepted),
       universityImageConsentAccepted: Boolean(consentsRaw.universityImageConsentAccepted),
       schoolImageConsentFiles,
     },
-    status: (data.status as RegistrationStatus) ?? "recibida",
-    faseActual: (data.faseActual as CompetitivePhase | null | undefined) ?? null,
-    estadoCompetitivo:
-      (data.estadoCompetitivo as CompetitiveStatus | null | undefined) ?? null,
+    status: normalizeRegistrationStatus(data.status),
+    faseActual: normalizeCompetitivePhase(data.faseActual),
+    estadoCompetitivo: normalizeCompetitiveStatus(data.estadoCompetitivo),
     puntajeOnline: toNullableNumber(data.puntajeOnline),
     puntajePresencial: toNullableNumber(data.puntajePresencial),
     puntajeFinal: toNullableNumber(data.puntajeFinal),
@@ -227,34 +269,6 @@ function buildAuditPayload(updatedBy?: string) {
   return payload;
 }
 
-export function resolveRegistrationCompetitiveView(
-  registration: RegistrationDocument,
-): RegistrationCompetitiveView {
-  const approved = registration.status === "aprobada";
-  const hasStoredPhase = Boolean(registration.faseActual);
-  const hasStoredStatus = Boolean(registration.estadoCompetitivo);
-
-  if (!approved) {
-    return {
-      faseActualMostrada: "pendiente",
-      estadoCompetitivoMostrado: "pendiente",
-      defaultsAplicados: {
-        faseActual: false,
-        estadoCompetitivo: false,
-      },
-    };
-  }
-
-  return {
-    faseActualMostrada: registration.faseActual ?? "online",
-    estadoCompetitivoMostrado: registration.estadoCompetitivo ?? "participando",
-    defaultsAplicados: {
-      faseActual: !hasStoredPhase,
-      estadoCompetitivo: !hasStoredStatus,
-    },
-  };
-}
-
 export async function getRegistrations(): Promise<{
   registrations: RegistrationDocument[];
   usingMockData: boolean;
@@ -280,14 +294,14 @@ export async function getRegistrations(): Promise<{
   } catch (error) {
     console.error("Error al consultar inscripciones en Firestore:", error);
     return {
-      registrations: MOCK_REGISTRATIONS,
-      usingMockData: true,
-      message: getMockFallbackMessage(),
+      registrations: [],
+      usingMockData: false,
+      message: "No se pudieron cargar las inscripciones reales. Revisa tu conexión o permisos.",
     };
   }
 }
 
-export async function getRegistrationsByCategory(category: RegistrationCategory) {
+export async function getRegistrationsByCategory(category: KnownRegistrationCategory) {
   const response = await getRegistrations();
   return {
     ...response,
@@ -325,9 +339,9 @@ export async function getRegistrationById(
   } catch (error) {
     console.error("Error consultando inscripcion por ID:", error);
     return {
-      registration: MOCK_REGISTRATIONS.find((item) => item.id === id) ?? null,
-      usingMockData: true,
-      message: getMockFallbackMessage(),
+      registration: null,
+      usingMockData: false,
+      message: "No se pudo cargar la inscripción real. Revisa tu conexión o permisos.",
     };
   }
 }
@@ -437,11 +451,11 @@ export function buildFutureStatusEmailQueueDraft(
 ) {
   const recipientEmail =
     registration.contactEmail ||
-    registration.responsible.email ||
+    registration.responsible?.email ||
     registration.members.find((member) => member.email)?.email ||
     "";
   const recipientName =
-    registration.responsible.firstName && registration.responsible.lastName
+    registration.responsible?.firstName && registration.responsible.lastName
       ? `${registration.responsible.firstName} ${registration.responsible.lastName}`
       : registration.teamName;
 

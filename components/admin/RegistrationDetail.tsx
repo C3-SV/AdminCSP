@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
-import { REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
+import {
+  REGISTRATION_CATEGORY_LABELS,
+  REGISTRATION_STATUS_OPTIONS,
+} from "@/constants/admin";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Toast } from "@/components/ui/Toast";
-import { updateRegistrationStatus } from "@/services/admin/registrations";
+import { saveRegistrationStatus } from "@/services/admin/adminMutations";
 import { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
 import { formatDate, formatPersonName } from "@/utils/admin";
 
@@ -27,7 +30,7 @@ export function RegistrationDetail({
   registration,
   usingMockData,
 }: RegistrationDetailProps) {
-  const { user, adminProfile } = useAdminAuth();
+  const { user } = useAdminAuth();
   const [status, setStatus] = useState<RegistrationStatus>(registration.status);
   const [adminNotes, setAdminNotes] = useState(registration.adminNotes ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -50,13 +53,12 @@ export function RegistrationDetail({
 
     setIsSaving(true);
     try {
-      const updatedBy = (user?.email ?? adminProfile?.email ?? "").trim().toLowerCase();
-      await updateRegistrationStatus(
-        registration.id,
+      await saveRegistrationStatus({
+        user,
+        id: registration.id,
         status,
         adminNotes,
-        updatedBy || undefined,
-      );
+      });
       setToast({ message: "Cambios guardados correctamente.", variant: "success" });
     } catch (error) {
       setToast({
@@ -83,7 +85,7 @@ export function RegistrationDetail({
             <strong>Equipo:</strong> {registration.teamName}
           </p>
           <p className="text-sm">
-            <strong>Categoría:</strong> {registration.category}
+            <strong>Categoría:</strong> {REGISTRATION_CATEGORY_LABELS[registration.category]}
           </p>
           <p className="text-sm">
             <strong>Institución:</strong> {registration.institution}
@@ -95,8 +97,8 @@ export function RegistrationDetail({
             <strong>Responsable:</strong>{" "}
             {registration.category === "colegios"
               ? formatPersonName(
-                  registration.responsible.firstName,
-                  registration.responsible.lastName,
+                  registration.responsible?.firstName,
+                  registration.responsible?.lastName,
                 ) || "-"
               : "No aplica"}
           </p>
@@ -177,24 +179,24 @@ export function RegistrationDetail({
             <p>
               <strong>Nombre:</strong>{" "}
               {formatPersonName(
-                registration.responsible.firstName,
-                registration.responsible.lastName,
+                registration.responsible?.firstName,
+                registration.responsible?.lastName,
               ) || "-"}
             </p>
             <p>
-              <strong>Correo:</strong> {registration.responsible.email}
+              <strong>Correo:</strong> {registration.responsible?.email || "-"}
             </p>
             <p>
-              <strong>Teléfono:</strong> {registration.responsible.phone}
+              <strong>Teléfono:</strong> {registration.responsible?.phone || "-"}
             </p>
             <p>
-              <strong>Institución:</strong> {registration.responsible.institution}
+              <strong>Institución:</strong> {registration.responsible?.institution || "-"}
             </p>
             <p>
-              <strong>Rol:</strong> {registration.responsible.role || "-"}
+              <strong>Rol:</strong> {registration.responsible?.role || "-"}
             </p>
             <p>
-              <strong>Relación:</strong> {registration.responsible.relationship}
+              <strong>Relación:</strong> {registration.responsible?.relationship || "-"}
             </p>
           </Card>
         ) : null}

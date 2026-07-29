@@ -7,6 +7,10 @@ import {
   COMPETITIVE_STATUS_LABELS,
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
+import {
+  COMPETITIVE_ACTIONS,
+  CompetitiveActionKey,
+} from "@/lib/admin/competitiveActions";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Button } from "@/components/ui/Button";
@@ -19,35 +23,21 @@ import { adminPath } from "@/lib/admin/routes";
 import {
   getRegistrationsByCategory,
   resolveRegistrationCompetitiveView,
-  updateRegistrationCompetitiveState,
 } from "@/services/admin/registrations";
+import { applyCompetitiveAction } from "@/services/admin/adminMutations";
 import {
   CompetitivePhase,
   CompetitiveStatus,
-  RegistrationCategory,
+  KnownRegistrationCategory,
   RegistrationDocument,
   RegistrationStatus,
 } from "@/types/admin/registration";
 import { formatDate, formatPersonName } from "@/utils/admin";
 
 type CategoryTeamsPageProps = {
-  category: RegistrationCategory;
+  category: KnownRegistrationCategory;
   title: string;
   subtitle: string;
-};
-
-type CompetitiveActionKey =
-  | "online"
-  | "clasificar_presencial"
-  | "no_clasificado"
-  | "finalista"
-  | "ganador"
-  | "eliminado";
-
-type CompetitiveAction = {
-  label: string;
-  faseActual: CompetitivePhase;
-  estadoCompetitivo: CompetitiveStatus;
 };
 
 const STATUS_LABEL_MAP: Record<RegistrationStatus, string> = {
@@ -58,39 +48,6 @@ const STATUS_LABEL_MAP: Record<RegistrationStatus, string> = {
   pendiente_correccion: "Pendiente de correccion",
 };
 
-const COMPETITIVE_ACTIONS: Record<CompetitiveActionKey, CompetitiveAction> = {
-  online: {
-    label: "Marcar en fase online",
-    faseActual: "online",
-    estadoCompetitivo: "participando",
-  },
-  clasificar_presencial: {
-    label: "Clasificar a presencial",
-    faseActual: "presencial",
-    estadoCompetitivo: "clasificado",
-  },
-  no_clasificado: {
-    label: "Marcar como no clasificado",
-    faseActual: "cerrado",
-    estadoCompetitivo: "no_clasificado",
-  },
-  finalista: {
-    label: "Marcar como finalista",
-    faseActual: "final",
-    estadoCompetitivo: "finalista",
-  },
-  ganador: {
-    label: "Marcar como ganador",
-    faseActual: "cerrado",
-    estadoCompetitivo: "ganador",
-  },
-  eliminado: {
-    label: "Marcar como eliminado",
-    faseActual: "cerrado",
-    estadoCompetitivo: "eliminado",
-  },
-};
-
 function formatScore(value: number | null | undefined) {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "-";
@@ -99,7 +56,7 @@ function formatScore(value: number | null | undefined) {
 }
 
 export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPageProps) {
-  const { user, adminProfile } = useAdminAuth();
+  const { user } = useAdminAuth();
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
   const [usingMockData, setUsingMockData] = useState(false);
   const [message, setMessage] = useState("");
@@ -114,6 +71,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
     "all" | CompetitiveStatus | "pendiente"
   >("all");
   const [actionByTeamId, setActionByTeamId] = useState<Record<string, CompetitiveActionKey>>({});
+  const [operationByTeamId, setOperationByTeamId] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{
     message: string;
     variant: "success" | "error" | "info";
@@ -216,6 +174,10 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
       ...current,
       [registrationId]: action,
     }));
+    setOperationByTeamId((current) => ({
+      ...current,
+      [registrationId]: crypto.randomUUID(),
+    }));
   };
 
   const handleApplyAction = async (registration: RegistrationDocument) => {
@@ -237,32 +199,33 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
       return;
     }
 
-    const selectedAction = COMPETITIVE_ACTIONS[actionKey];
-    const updatedBy = (user?.email ?? adminProfile?.email ?? "").trim().toLowerCase();
-
     setSavingId(registration.id);
     try {
-      await updateRegistrationCompetitiveState({
+      const updatedRegistration = await applyCompetitiveAction({
+        user,
         id: registration.id,
-        faseActual: selectedAction.faseActual,
-        estadoCompetitivo: selectedAction.estadoCompetitivo,
-        updatedBy: updatedBy || undefined,
+        action: actionKey,
+        operationId: operationByTeamId[registration.id] ?? crypto.randomUUID(),
       });
 
       setRegistrations((current) =>
         current.map((item) =>
           item.id === registration.id
-            ? {
-                ...item,
-                faseActual: selectedAction.faseActual,
-                estadoCompetitivo: selectedAction.estadoCompetitivo,
-                updatedAt: new Date().toISOString(),
-                updatedBy: updatedBy || item.updatedBy,
-              }
+            ? updatedRegistration
             : item,
         ),
       );
-      setToast({ message: "Fase competitiva actualizada.", variant: "success" });
+      setActionByTeamId((current) => {
+        const remaining = { ...current };
+        delete remaining[registration.id];
+        return remaining;
+      });
+      setOperationByTeamId((current) => {
+        const remaining = { ...current };
+        delete remaining[registration.id];
+        return remaining;
+      });
+      setToast({ message: "Fase competitiva actualizada y confirmada.", variant: "success" });
     } catch (error) {
       setToast({
         message:
@@ -281,7 +244,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
       {toast ? <Toast message={toast.message} variant={toast.variant} /> : null}
       <AdminTopbar subtitle={subtitle} title={title} />
 
-      {usingMockData && message ? (
+      {message ? (
         <p className="rounded-md border border-csp-warning/40 bg-csp-warning/10 px-3 py-2 text-sm text-csp-black">
           {message}
         </p>
@@ -378,7 +341,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                 <tbody>
                   {filteredRegistrations.map((registration) => {
                     const competitionView = resolveRegistrationCompetitiveView(registration);
-                    const selectedAction = actionByTeamId[registration.id] ?? "online";
+                    const selectedAction = actionByTeamId[registration.id] ?? "";
                     const savingRow = savingId === registration.id;
 
                     return (
@@ -447,6 +410,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                             </Link>
                             <Select
                               className="h-9"
+                              disabled={savingRow}
                               id={`action-${registration.id}`}
                               onChange={(event) =>
                                 handleActionChange(
@@ -460,6 +424,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                                   label: action.label,
                                 }),
                               )}
+                              placeholder="Selecciona una acción"
                               value={selectedAction}
                             />
                             <Button

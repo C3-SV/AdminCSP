@@ -8,7 +8,11 @@ import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { getRegistrations } from "@/services/admin/registrations";
-import { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
+import {
+  KnownRegistrationCategory,
+  RegistrationDocument,
+  RegistrationStatus,
+} from "@/types/admin/registration";
 import { exportRegistrationsToCSV } from "@/utils/admin/csv";
 import { countByStatus } from "@/utils/admin/metrics";
 import { formatPersonName } from "@/utils/admin";
@@ -22,13 +26,10 @@ function isSameDate(dateISO: string | undefined, dateFilter: string) {
 
 export default function AdminInscripcionesPage() {
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
-  const [usingMockData, setUsingMockData] = useState(false);
   const [mockMessage, setMockMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<"all" | "colegios" | "universidades">(
-    "all",
-  );
+  const [category, setCategory] = useState<"all" | KnownRegistrationCategory>("all");
   const [status, setStatus] = useState<"all" | RegistrationStatus>("all");
   const [date, setDate] = useState("");
   const [toast, setToast] = useState<{
@@ -45,7 +46,6 @@ export default function AdminInscripcionesPage() {
       }
 
       setRegistrations(response.registrations);
-      setUsingMockData(response.usingMockData);
       setMockMessage(response.message ?? "");
       setLoading(false);
     })();
@@ -87,6 +87,10 @@ export default function AdminInscripcionesPage() {
       {
         label: "Universidades",
         value: registrations.filter((item) => item.category === "universidades").length,
+      },
+      {
+        label: "AdE",
+        value: registrations.filter((item) => item.category === "ade").length,
       },
       { label: "Aprobadas", value: countByStatus(registrations, "aprobada") },
       { label: "En revisión", value: countByStatus(registrations, "en_revision") },
@@ -152,7 +156,7 @@ export default function AdminInscripcionesPage() {
         title="Panel de Control"
       />
 
-      {usingMockData && mockMessage ? (
+      {mockMessage ? (
         <p className="rounded-md border border-csp-warning/40 bg-csp-warning/10 px-3 py-2 text-sm text-csp-black">
           {mockMessage}
         </p>
@@ -188,4 +192,3 @@ export default function AdminInscripcionesPage() {
     </div>
   );
 }
-

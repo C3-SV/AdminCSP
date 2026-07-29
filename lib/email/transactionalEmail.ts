@@ -20,10 +20,10 @@ export const BREVO_TEMPLATE_ENV_BY_EMAIL_TYPE: Record<
   registration_approved: null,
   registration_rejected: null,
   correction_required: null,
-  classified_to_onsite: null,
-  not_classified: null,
-  finalist: null,
-  winner: null,
+  classified_to_onsite: "BREVO_CLASSIFIED_TO_ONSITE_TEMPLATE_ID",
+  not_classified: "BREVO_NOT_CLASSIFIED_TEMPLATE_ID",
+  finalist: "BREVO_FINALIST_TEMPLATE_ID",
+  winner: "BREVO_WINNER_TEMPLATE_ID",
   badge_generated: null,
 };
 

@@ -9,7 +9,6 @@ import { RegistrationDocument } from "@/types/admin/registration";
 export default function AdminPage() {
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usingMockData, setUsingMockData] = useState(false);
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
@@ -20,7 +19,6 @@ export default function AdminPage() {
         return;
       }
       setRegistrations(response.registrations);
-      setUsingMockData(response.usingMockData);
       setMessage(response.message ?? "");
       setLoading(false);
     })();
@@ -36,7 +34,7 @@ export default function AdminPage() {
         subtitle="Resumen rápido y accesos del módulo de inscripciones."
         title="Panel de Control"
       />
-      {usingMockData && message ? (
+      {message ? (
         <p className="rounded-md border border-csp-warning/40 bg-csp-warning/10 px-3 py-2 text-sm text-csp-black">
           {message}
         </p>

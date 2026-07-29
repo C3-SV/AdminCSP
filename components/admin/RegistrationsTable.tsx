@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { REGISTRATION_CATEGORY_LABELS } from "@/constants/admin";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { adminPath } from "@/lib/admin/routes";
 import { RegistrationDocument } from "@/types/admin/registration";
@@ -49,7 +50,9 @@ export function RegistrationsTable({ registrations }: RegistrationsTableProps) {
               <td className="px-3 py-3 font-medium text-csp-primary">
                 {registration.teamName}
               </td>
-              <td className="px-3 py-3 capitalize">{registration.category}</td>
+              <td className="px-3 py-3">
+                {REGISTRATION_CATEGORY_LABELS[registration.category]}
+              </td>
               <td className="px-3 py-3">{registration.institution}</td>
               <td className="px-3 py-3">
                 {registration.category === "colegios"
@@ -76,4 +79,3 @@ export function RegistrationsTable({ registrations }: RegistrationsTableProps) {
     </div>
   );
 }
-

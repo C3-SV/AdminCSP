@@ -14,6 +14,7 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
   const universidades = registrations.filter(
     (item) => item.category === "universidades",
   ).length;
+  const ade = registrations.filter((item) => item.category === "ade").length;
   const aprobadas = registrations.filter((item) => item.status === "aprobada").length;
 
   return (
@@ -23,6 +24,7 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
           { label: "Total equipos", value: total },
           { label: "Colegios", value: colegios },
           { label: "Universidades", value: universidades },
+          { label: "AdE", value: ade },
           { label: "Aprobadas", value: aprobadas },
         ]}
       />
@@ -74,4 +76,3 @@ export function AdminDashboard({ registrations }: AdminDashboardProps) {
     </div>
   );
 }
-

@@ -38,7 +38,7 @@ export default function AdminInscripcionDetallePage() {
   return (
     <div className="space-y-4">
       <AdminTopbar subtitle={`ID: ${id}`} title="Detalle de inscripción" />
-      {usingMockData && message ? (
+      {message ? (
         <p className="rounded-md border border-csp-warning/40 bg-csp-warning/10 px-3 py-2 text-sm text-csp-black">
           {message}
         </p>
@@ -64,4 +64,3 @@ export default function AdminInscripcionDetallePage() {
     </div>
   );
 }
-
