@@ -12,6 +12,7 @@ import { cn } from "@/utils/admin";
 const navItems = [
   { href: ADMIN_ROUTES.root, label: "Resumen" },
   { href: ADMIN_ROUTES.inscripciones, label: "Inscripciones" },
+  { href: ADMIN_ROUTES.correos, label: "Correos" },
   { href: ADMIN_ROUTES.colegios, label: "Colegios" },
   { href: ADMIN_ROUTES.universidades, label: "Universidades" },
   { href: ADMIN_ROUTES.ade, label: "AdE" },

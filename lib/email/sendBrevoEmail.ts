@@ -5,13 +5,29 @@ type BrevoRecipient = {
   name?: string;
 };
 
-type SendBrevoEmailInput = {
+type BrevoCommonInput = {
   to: BrevoRecipient;
   cc?: BrevoRecipient[];
+  idempotencyKey?: string;
+  attachment?: {
+    name: string;
+    content: string;
+  };
+  sandbox?: boolean;
+};
+
+type BrevoTemplateInput = BrevoCommonInput & {
   templateId: number;
   params: Record<string, unknown>;
-  idempotencyKey?: string;
 };
+
+type BrevoDirectContentInput = BrevoCommonInput & {
+  subject: string;
+  htmlContent: string;
+  textContent: string;
+};
+
+type SendBrevoEmailInput = BrevoTemplateInput | BrevoDirectContentInput;
 
 type BrevoSendEmailResponse = {
   messageId?: string;
@@ -31,13 +47,8 @@ function getBrevoApiKey() {
   return apiKey;
 }
 
-export async function sendBrevoEmail({
-  to,
-  cc = [],
-  templateId,
-  params,
-  idempotencyKey,
-}: SendBrevoEmailInput): Promise<BrevoSendEmailResponse> {
+export async function sendBrevoEmail(input: SendBrevoEmailInput): Promise<BrevoSendEmailResponse> {
+  const { to, cc = [], idempotencyKey, attachment, sandbox = false } = input;
   const apiKey = getBrevoApiKey();
 
   const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
@@ -47,15 +58,30 @@ export async function sendBrevoEmail({
 
   const body: Record<string, unknown> = {
     to: [{ email: to.email, name: to.name }],
-    templateId,
-    params,
   };
+  if ("templateId" in input) {
+    body.templateId = input.templateId;
+    body.params = input.params;
+  } else {
+    body.subject = input.subject;
+    body.htmlContent = input.htmlContent;
+    body.textContent = input.textContent;
+  }
 
   if (cc.length) {
     body.cc = cc;
   }
   if (idempotencyKey) {
     body.headers = { "Idempotency-Key": idempotencyKey };
+  }
+  if (sandbox) {
+    body.headers = {
+      ...(body.headers as Record<string, string> | undefined),
+      "X-Sib-Sandbox": "drop",
+    };
+  }
+  if (attachment) {
+    body.attachment = [attachment];
   }
 
   if (senderEmail) {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveRegistrationCompetitiveView } from "@/lib/admin/registrationView";
 import type { RegistrationDocument } from "@/types/admin/registration";
+import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 
 const baseRegistration: RegistrationDocument = {
   id: "team",
@@ -14,6 +15,7 @@ const baseRegistration: RegistrationDocument = {
   consents: { dataReviewAccepted: true, privacyAccepted: true, schoolImageConsentFiles: [] },
   status: "recibida",
   adminNotes: "",
+  emailStatus: EMPTY_EMAIL_STATUS,
 };
 
 describe("stored competitive view", () => {
@@ -60,6 +62,8 @@ describe("Brevo payload", () => {
       templateId: 3,
       params: { TEAM_NAME: "Equipo" },
       idempotencyKey: "operation-id-123456",
+      attachment: { name: "tarjeta.png", content: "cG5n" },
+      sandbox: true,
     });
 
     const request = fetchMock.mock.calls[0][1] as RequestInit;
@@ -68,6 +72,27 @@ describe("Brevo payload", () => {
       to: [{ email: "principal@example.com" }],
       cc: [{ email: "member@example.com", name: "Member" }],
       headers: { "Idempotency-Key": "operation-id-123456" },
+      attachment: [{ name: "tarjeta.png", content: "cG5n" }],
     });
+    expect(body.headers).toMatchObject({ "X-Sib-Sandbox": "drop" });
+  });
+
+  it("sends direct HTML content without a Brevo template", async () => {
+    vi.stubEnv("BREVO_API_KEY", "xkeysib-test");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => "{}" });
+    vi.stubGlobal("fetch", fetchMock);
+    const { sendBrevoEmail } = await import("@/lib/email/sendBrevoEmail");
+
+    await sendBrevoEmail({
+      to: { email: "principal@example.com" },
+      subject: "Asunto directo",
+      htmlContent: "<p>Contenido</p>",
+      textContent: "Contenido",
+    });
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(String(request.body));
+    expect(body).toMatchObject({ subject: "Asunto directo", htmlContent: "<p>Contenido</p>", textContent: "Contenido" });
+    expect(body.templateId).toBeUndefined();
   });
 });

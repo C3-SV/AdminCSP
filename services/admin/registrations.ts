@@ -28,6 +28,12 @@ import {
   Responsible,
   UploadedFileMetadata,
 } from "@/types/admin/registration";
+import {
+  EMPTY_EMAIL_STATUS,
+  type EmailDeliveryStatus,
+  type EmailStatusEntry,
+  type RegistrationEmailStatus,
+} from "@/types/admin/email";
 
 const COLLECTION_NAME = "registrations";
 
@@ -117,6 +123,29 @@ function toNullableString(value: unknown): string | null {
   }
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+function mapEmailStatusEntry(value: unknown): EmailStatusEntry {
+  const item = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const status = item.status;
+  return {
+    status:
+      status === "sent" || status === "failed" || status === "dry_run" || status === "not_sent"
+        ? (status as EmailDeliveryStatus)
+        : "not_sent",
+    lastAttemptAt: toISODate(item.lastAttemptAt),
+    lastSentAt: toISODate(item.lastSentAt),
+    lastLogId: typeof item.lastLogId === "string" ? item.lastLogId : undefined,
+  };
+}
+
+function mapEmailStatus(value: unknown): RegistrationEmailStatus {
+  const item = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return {
+    virtualInstructions: mapEmailStatusEntry(item.virtualInstructions),
+    classifiedToOnsite: mapEmailStatusEntry(item.classifiedToOnsite),
+    notClassified: mapEmailStatusEntry(item.notClassified),
+  };
 }
 
 function mapUploadthingMetadata(value: unknown): UploadedFileMetadata | undefined {
@@ -250,6 +279,7 @@ export function mapRegistrationFromFirestore(
     createdAt: toISODate(data.createdAt),
     updatedAt: toISODate(data.updatedAt),
     updatedBy: typeof data.updatedBy === "string" ? data.updatedBy : undefined,
+    emailStatus: mapEmailStatus(data.emailStatus ?? EMPTY_EMAIL_STATUS),
   };
 }
 

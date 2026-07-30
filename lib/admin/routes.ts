@@ -11,6 +11,7 @@ export function adminPath(path = "") {
 export const ADMIN_ROUTES = {
   root: adminPath(),
   inscripciones: adminPath("/inscripciones"),
+  correos: adminPath("/correos"),
   colegios: adminPath("/colegios"),
   universidades: adminPath("/universidades"),
   ade: adminPath("/ade"),

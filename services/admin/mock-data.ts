@@ -1,4 +1,5 @@
 import { RegistrationDocument, UploadedFileMetadata } from "@/types/admin/registration";
+import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 
 function buildStudentFile(name: string): UploadedFileMetadata {
   return {
@@ -91,6 +92,7 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     },
     status: "aprobada",
     adminNotes: "Validacion completa de documentos.",
+    emailStatus: EMPTY_EMAIL_STATUS,
     createdAt: "2026-03-12T10:00:00.000Z",
     updatedAt: "2026-03-13T10:00:00.000Z",
   },
@@ -137,6 +139,7 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     },
     status: "en_revision",
     adminNotes: "Pendiente revisar un carnet.",
+    emailStatus: EMPTY_EMAIL_STATUS,
     createdAt: "2026-04-15T08:30:00.000Z",
     updatedAt: "2026-04-16T12:00:00.000Z",
   },
@@ -179,6 +182,7 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     },
     status: "recibida",
     adminNotes: "",
+    emailStatus: EMPTY_EMAIL_STATUS,
     createdAt: "2026-08-01T09:00:00.000Z",
     updatedAt: "2026-08-01T09:00:00.000Z",
   },
@@ -223,6 +227,7 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     },
     status: "rechazada",
     adminNotes: "No cumple con requisitos documentales de un integrante.",
+    emailStatus: EMPTY_EMAIL_STATUS,
     createdAt: "2026-08-15T11:10:00.000Z",
     updatedAt: "2026-08-15T13:50:00.000Z",
   },
@@ -267,6 +272,7 @@ export const MOCK_REGISTRATIONS: RegistrationDocument[] = [
     },
     status: "pendiente_correccion",
     adminNotes: "Enviar actualizacion de documento del capitan.",
+    emailStatus: EMPTY_EMAIL_STATUS,
     createdAt: "2026-08-29T16:20:00.000Z",
     updatedAt: "2026-08-30T09:15:00.000Z",
   },

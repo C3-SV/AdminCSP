@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveTeamEmailRecipients } from "@/lib/email/teamRecipients";
 import type { RegistrationDocument } from "@/types/admin/registration";
+import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 
 function registration(overrides: Partial<RegistrationDocument> = {}): RegistrationDocument {
   return {
@@ -16,6 +17,7 @@ function registration(overrides: Partial<RegistrationDocument> = {}): Registrati
     consents: { dataReviewAccepted: true, privacyAccepted: true, schoolImageConsentFiles: [] },
     status: "recibida",
     adminNotes: "",
+    emailStatus: EMPTY_EMAIL_STATUS,
     ...overrides,
   };
 }
