@@ -93,6 +93,11 @@ export async function getRegistrationEmailHistory({
   return { logs: body.logs ?? [], deliveryMode: body.deliveryMode ?? "dry_run" };
 }
 
+export async function getAdminEmailHistory({ user }: { user: FirebaseSessionUser | null }) {
+  const body = await authorizedRequest(user, "/api/admin/emails");
+  return body.logs ?? [];
+}
+
 export async function sendVirtualInstructions({
   user,
   id,

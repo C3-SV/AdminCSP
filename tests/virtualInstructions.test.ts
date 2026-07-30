@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 import { generateVirtualParticipationCard, getVirtualCardInput } from "@/lib/cards/virtualParticipationCard";
 import { resolveVirtualInstructionRecipients } from "@/lib/email/virtualInstructionRecipients";
+import { buildVirtualInstructionsContent } from "@/lib/email/virtualInstructionsContent";
 import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 import type { RegistrationDocument } from "@/types/admin/registration";
 
@@ -65,4 +66,15 @@ describe("virtual instructions helpers", () => {
     expect(card.buffer.length).toBeGreaterThan(10_000);
     expect(card.sha256).toHaveLength(64);
   }, 15_000);
+
+  it("builds direct email content and requires the WhatsApp group URL", () => {
+    const previous = process.env.CSP_VIRTUAL_WHATSAPP_URL;
+    process.env.CSP_VIRTUAL_WHATSAPP_URL = "https://chat.whatsapp.com/example";
+    const content = buildVirtualInstructionsContent(team());
+    expect(content.subject).toContain("fase virtual");
+    expect(content.htmlContent).toContain("chat.whatsapp.com/example");
+    expect(content.htmlContent).toContain("Árboles Binarios");
+    if (previous === undefined) delete process.env.CSP_VIRTUAL_WHATSAPP_URL;
+    else process.env.CSP_VIRTUAL_WHATSAPP_URL = previous;
+  });
 });

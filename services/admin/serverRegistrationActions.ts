@@ -201,7 +201,9 @@ export async function applyCompetitiveActionAsAdmin({
     await actionOutboxRef.create({
       kind: "admin_competitive_action",
       registrationId: id,
+      teamName: current.teamName,
       action,
+      emailType: actionDefinition.emailType,
       status: "processing",
       recipientEmail: recipients.to.email,
       ccEmails: recipients.cc.map((recipient) => recipient.email),

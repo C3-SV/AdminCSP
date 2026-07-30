@@ -76,4 +76,23 @@ describe("Brevo payload", () => {
     });
     expect(body.headers).toMatchObject({ "X-Sib-Sandbox": "drop" });
   });
+
+  it("sends direct HTML content without a Brevo template", async () => {
+    vi.stubEnv("BREVO_API_KEY", "xkeysib-test");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => "{}" });
+    vi.stubGlobal("fetch", fetchMock);
+    const { sendBrevoEmail } = await import("@/lib/email/sendBrevoEmail");
+
+    await sendBrevoEmail({
+      to: { email: "principal@example.com" },
+      subject: "Asunto directo",
+      htmlContent: "<p>Contenido</p>",
+      textContent: "Contenido",
+    });
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(String(request.body));
+    expect(body).toMatchObject({ subject: "Asunto directo", htmlContent: "<p>Contenido</p>", textContent: "Contenido" });
+    expect(body.templateId).toBeUndefined();
+  });
 });
