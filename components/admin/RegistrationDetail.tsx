@@ -30,6 +30,12 @@ function validEmail(value: string | undefined) {
   return Boolean(value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()));
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 export function RegistrationDetail({ registration, usingMockData }: { registration: RegistrationDocument; usingMockData: boolean }) {
   const { user } = useAdminAuth();
   const [current, setCurrent] = useState(registration);
@@ -171,9 +177,37 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
                   <p className="font-semibold text-csp-primary">Integrante {index + 1}: {memberName(member.firstName, member.lastName)}</p>
                   <p><strong>Correo:</strong> {member.email || "-"}</p>
                   <p><strong>WhatsApp:</strong> {member.whatsapp || "-"}</p>
+                  {member.studentIdFile ? (
+                    <p>
+                      <strong>Documento adjunto:</strong>{" "}
+                      <a className="font-semibold text-csp-blue hover:underline" href={member.studentIdFile.fileUrl} rel="noopener noreferrer" target="_blank">
+                        {member.studentIdFile.fileName}
+                      </a>{" "}
+                      <span className="text-csp-black/70">({formatBytes(member.studentIdFile.fileSize)})</span>
+                    </p>
+                  ) : <p><strong>Documento adjunto:</strong> No disponible</p>}
                 </div>
               ))}
             </div>
+          </Card>
+
+          <Card className="space-y-2 text-sm">
+            <h3 className="font-display text-lg font-semibold text-csp-primary">Consentimientos y adjuntos</h3>
+            <p><strong>Revisión de datos:</strong> {current.consents.dataReviewAccepted ? "Aceptado" : "No aceptado"}</p>
+            <p><strong>Privacidad:</strong> {current.consents.privacyAccepted ? "Aceptado" : "No aceptado"}</p>
+            {current.consents.schoolImageConsentFiles.length ? (
+              <ul className="space-y-1">
+                {current.consents.schoolImageConsentFiles.map((file) => (
+                  <li key={file.fileKey}>
+                    <strong>Consentimiento adjunto:</strong>{" "}
+                    <a className="font-semibold text-csp-blue hover:underline" href={file.fileUrl} rel="noopener noreferrer" target="_blank">
+                      {file.fileName}
+                    </a>{" "}
+                    <span className="text-csp-black/70">({formatBytes(file.fileSize)})</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p><strong>Consentimientos adjuntos:</strong> No hay archivos.</p>}
           </Card>
 
           <Card className="space-y-2 text-sm">

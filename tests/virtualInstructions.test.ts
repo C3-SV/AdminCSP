@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import sharp from "sharp";
 import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 import { generateVirtualParticipationCard, getVirtualCardInput } from "@/lib/cards/virtualParticipationCard";
 import { resolveVirtualInstructionRecipients } from "@/lib/email/virtualInstructionRecipients";
@@ -66,6 +67,31 @@ describe("virtual instructions helpers", () => {
     expect(card.buffer.length).toBeGreaterThan(10_000);
     expect(card.sha256).toHaveLength(64);
   }, 15_000);
+
+  it("fits long but realistic team, institution, and member names without changing card dimensions", async () => {
+    const card = await generateVirtualParticipationCard(
+      team({
+        teamName: "Los Algoritmos de la Montaña y la Costa",
+        institution: "Universidad Centroamericana José Simeón Cañas, Facultad de Ingeniería",
+        category: "universidades",
+        members: [
+          { id: "1", firstName: "María Fernanda", lastName: "Rodríguez de Hernández", age: 20, email: "maria@example.com" },
+          { id: "2", firstName: "José Alejandro", lastName: "Martínez Villalta", age: 20, email: "jose@example.com" },
+          { id: "3", firstName: "Ana Sofía", lastName: "Castillo Guardado", age: 20, email: "ana@example.com" },
+        ],
+      }),
+    );
+    const metadata = await sharp(card.buffer).metadata();
+    expect(metadata.width).toBe(1400);
+    expect(metadata.height).toBe(1750);
+    expect(card.members).toHaveLength(3);
+  }, 15_000);
+
+  it("rejects an unbreakable value that cannot fit instead of creating a cropped card", async () => {
+    await expect(
+      generateVirtualParticipationCard(team({ teamName: "X".repeat(400) })),
+    ).rejects.toThrow("no cabe en la tarjeta");
+  });
 
   it("builds direct email content and requires the WhatsApp group URL", () => {
     const previous = process.env.CSP_VIRTUAL_WHATSAPP_URL;
