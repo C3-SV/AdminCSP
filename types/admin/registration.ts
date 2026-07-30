@@ -120,4 +120,5 @@ export type RegistrationDocument = {
   createdAt?: string;
   updatedAt?: string;
   updatedBy?: string;
+  emailStatus: import("@/types/admin/email").RegistrationEmailStatus;
 };
