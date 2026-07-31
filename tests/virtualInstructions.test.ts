@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import path from "node:path";
 import sharp from "sharp";
 import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 import { generateVirtualParticipationCard, getVirtualCardInput } from "@/lib/cards/virtualParticipationCard";
@@ -66,6 +67,26 @@ describe("virtual instructions helpers", () => {
     expect(card.buffer.subarray(1, 4).toString()).toBe("PNG");
     expect(card.buffer.length).toBeGreaterThan(10_000);
     expect(card.sha256).toHaveLength(64);
+
+    // Regression guard: a valid PNG is not enough—the text pixels must differ
+    // from the blank source template, as they did not in the Vercel failure.
+    const [generated, template] = await Promise.all([
+      sharp(card.buffer).ensureAlpha().raw().toBuffer(),
+      sharp(path.join(process.cwd(), "assets", "virtual-card", "participacion-virtual-template.png"))
+        .resize(1400, 1750, { fit: "fill" })
+        .ensureAlpha()
+        .raw()
+        .toBuffer(),
+    ]);
+    let changedPixels = 0;
+    for (let index = 0; index < generated.length; index += 4) {
+      if (
+        Math.abs(generated[index] - template[index]) > 10 ||
+        Math.abs(generated[index + 1] - template[index + 1]) > 10 ||
+        Math.abs(generated[index + 2] - template[index + 2]) > 10
+      ) changedPixels += 1;
+    }
+    expect(changedPixels).toBeGreaterThan(1_000);
   }, 15_000);
 
   it("fits long but realistic team, institution, and member names without changing card dimensions", async () => {

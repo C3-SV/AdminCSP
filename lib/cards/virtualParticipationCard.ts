@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import type { RegistrationDocument } from "@/types/admin/registration";
@@ -103,20 +102,44 @@ export function getVirtualCardInput(registration: RegistrationDocument) {
   return { teamName, institution, members };
 }
 
-function textSvg(value: string, box: TextBox, debug: boolean) {
+function textLayout(value: string, box: TextBox) {
   const { lines, fontSize } = fitText(value, box);
-  const lineHeight = Math.round(fontSize * 1.12);
-  const firstBaseline = box.y + box.height / 2 - ((lines.length - 1) * lineHeight) / 2 + fontSize * 0.35;
-  const text = lines
-    .map(
-      (line, index) =>
-        `<text x="${box.x + box.width / 2}" y="${Math.round(firstBaseline + index * lineHeight)}" text-anchor="middle" font-family="CspCard" font-size="${fontSize}" fill="#FFFFFF">${xml(line)}</text>`,
-    )
-    .join("");
-  const guide = debug
-    ? `<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="none" stroke="#ffea00" stroke-width="3"/><circle cx="${box.x + box.width / 2}" cy="${box.y + box.height / 2}" r="7" fill="#ffea00"/>`
-    : "";
-  return `${guide}${text}`;
+  return { lines, fontSize };
+}
+
+async function nativeTextOverlay(value: string, box: TextBox) {
+  const { lines, fontSize } = textLayout(value, box);
+  for (let actualSize = fontSize; actualSize >= box.minFontSize; actualSize -= 1) {
+    const markup = `<span foreground="#ffffff" font_desc="Poppins SemiBold ${actualSize}">${lines.map(xml).join("\n")}</span>`;
+    const { data, info } = await sharp({
+      text: {
+        text: markup,
+        font: "Poppins SemiBold",
+        fontfile: FONT_PATH,
+        width: box.width,
+        align: "centre",
+        wrap: "word-char",
+        rgba: true,
+      },
+    })
+      .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toBuffer({ resolveWithObject: true });
+
+    if (info.width <= box.width && info.height <= box.height) {
+      return {
+        input: data,
+        left: Math.round(box.x + (box.width - info.width) / 2),
+        top: Math.round(box.y + (box.height - info.height) / 2),
+      };
+    }
+  }
+  throw new VirtualCardValidationError(`El texto “${compact(value)}” no cabe en la tarjeta.`);
+}
+
+function debugGuide(boxes: TextBox[]) {
+  const shapes = boxes.map((box) => `<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="none" stroke="#ffea00" stroke-width="3"/><circle cx="${box.x + box.width / 2}" cy="${box.y + box.height / 2}" r="7" fill="#ffea00"/>`).join("");
+  return Buffer.from(`<svg width="${CARD_WIDTH}" height="${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">${shapes}</svg>`);
 }
 
 export function isVirtualCardDebugEnabled() {
@@ -129,16 +152,18 @@ export async function generateVirtualParticipationCard(
 ): Promise<GeneratedVirtualCard> {
   const input = getVirtualCardInput(registration);
   const debug = Boolean(options.debug);
-  const font = await readFile(FONT_PATH);
   const memberBoxes = [VIRTUAL_CARD_TEXT_BOXES.member1, VIRTUAL_CARD_TEXT_BOXES.member2, VIRTUAL_CARD_TEXT_BOXES.member3];
   const memberStart = Math.floor((memberBoxes.length - input.members.length) / 2);
-  const renderedMembers = input.members
-    .map((member, index) => textSvg(member, memberBoxes[memberStart + index], debug))
-    .join("");
-  const svg = `<svg width="${CARD_WIDTH}" height="${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: CspCard; src: url(data:font/ttf;base64,${font.toString("base64")}) format('truetype'); }</style>${textSvg(input.teamName, VIRTUAL_CARD_TEXT_BOXES.teamName, debug)}${textSvg(input.institution, VIRTUAL_CARD_TEXT_BOXES.institution, debug)}${renderedMembers}</svg>`;
+  const activeMemberBoxes = input.members.map((_, index) => memberBoxes[memberStart + index]);
+  const overlays = await Promise.all([
+    nativeTextOverlay(input.teamName, VIRTUAL_CARD_TEXT_BOXES.teamName),
+    nativeTextOverlay(input.institution, VIRTUAL_CARD_TEXT_BOXES.institution),
+    ...input.members.map((member, index) => nativeTextOverlay(member, activeMemberBoxes[index])),
+  ]);
+  if (debug) overlays.push({ input: debugGuide([VIRTUAL_CARD_TEXT_BOXES.teamName, VIRTUAL_CARD_TEXT_BOXES.institution, ...memberBoxes]), left: 0, top: 0 });
   const buffer = await sharp(TEMPLATE_PATH)
     .resize(CARD_WIDTH, CARD_HEIGHT, { fit: "fill" })
-    .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+    .composite(overlays)
     .png()
     .toBuffer();
   const safeTeam = input.teamName
