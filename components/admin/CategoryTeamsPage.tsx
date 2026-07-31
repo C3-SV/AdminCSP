@@ -59,6 +59,7 @@ function formatScore(value: number | null | undefined) {
 }
 
 export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPageProps) {
+  const showResponsible = category === "colegios";
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -242,7 +243,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                   <tr>
                     <th className="px-3 py-3 font-semibold">Equipo</th>
                     <th className="px-3 py-3 font-semibold">Institucion</th>
-                    <th className="px-3 py-3 font-semibold">Responsable</th>
+                    {showResponsible ? <th className="px-3 py-3 font-semibold">Responsable</th> : null}
                     <th className="px-3 py-3 font-semibold">Estado de inscripcion</th>
                     <th className="px-3 py-3 font-semibold">Fase actual</th>
                     <th className="px-3 py-3 font-semibold">Estado competitivo</th>
@@ -265,12 +266,14 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                           {registration.teamName}
                         </td>
                         <td className="px-3 py-3">{getInstitutionDisplay(registration)}</td>
-                        <td className="px-3 py-3">
-                          {formatPersonName(
-                            registration.responsible?.firstName,
-                            registration.responsible?.lastName,
-                          ) || "-"}
-                        </td>
+                        {showResponsible ? (
+                          <td className="px-3 py-3">
+                            {formatPersonName(
+                              registration.responsible?.firstName,
+                              registration.responsible?.lastName,
+                            ) || "-"}
+                          </td>
+                        ) : null}
                         <td className="px-3 py-3">{STATUS_LABEL_MAP[registration.status]}</td>
                         <td className="px-3 py-3">
                           {competitionView.faseActualMostrada === "pendiente"
