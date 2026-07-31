@@ -9,7 +9,8 @@ import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 
 const ASSET_DIR = path.join(process.cwd(), "assets", "virtual-card");
 const TEMPLATE_PATH = path.join(ASSET_DIR, "participacion-virtual-template.png");
-const FONT_PATH = path.join(ASSET_DIR, "Arial-Bold.ttf");
+// This font is explicitly included in the Vercel route traces via next.config.ts.
+const FONT_PATH = path.join(ASSET_DIR, "Poppins-SemiBold.ttf");
 const CARD_WIDTH = 1400;
 const CARD_HEIGHT = 1750;
 

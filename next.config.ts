@@ -8,6 +8,18 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: configDir,
   },
+  // These files are read by Sharp at runtime. Explicit tracing keeps them in
+  // Vercel's serverless functions instead of relying on filesystem inference.
+  outputFileTracingIncludes: {
+    "/api/admin/registrations/[id]/emails/virtual-instructions": [
+      "assets/virtual-card/participacion-virtual-template.png",
+      "assets/virtual-card/Poppins-SemiBold.ttf",
+    ],
+    "/api/admin/registrations/[id]/virtual-card-preview": [
+      "assets/virtual-card/participacion-virtual-template.png",
+      "assets/virtual-card/Poppins-SemiBold.ttf",
+    ],
+  },
 };
 
 export default nextConfig;
