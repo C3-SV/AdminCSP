@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   COMPETITIVE_PHASE_LABELS,
-  COMPETITIVE_STATUS_LABELS,
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
@@ -294,7 +293,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                     {showResponsible ? <th className="px-3 py-3 font-semibold">Responsable</th> : null}
                     <th className="px-3 py-3 font-semibold">Estado de inscripcion</th>
                     <th className="px-3 py-3 font-semibold">Fase actual</th>
-                    <th className="px-3 py-3 font-semibold">Estado competitivo</th>
+                    <th className="px-3 py-3 font-semibold">Usuario OmegaUp</th>
                     <th className="px-3 py-3 font-semibold">Puntaje online</th>
                     <th className="px-3 py-3 font-semibold">Puntaje presencial</th>
                     <th className="px-3 py-3 font-semibold">Fecha</th>
@@ -329,11 +328,9 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                             : COMPETITIVE_PHASE_LABELS[competitionView.faseActualMostrada]}
                         </td>
                         <td className="px-3 py-3">
-                          {competitionView.estadoCompetitivoMostrado === "pendiente"
-                            ? "Pendiente/sin asignar"
-                            : COMPETITIVE_STATUS_LABELS[
-                                competitionView.estadoCompetitivoMostrado
-                              ]}
+                          {registration.teamOmegaUpUser.trim() || (
+                            <span className="font-medium text-csp-warning">Sin usuario</span>
+                          )}
                         </td>
                         <td className="px-3 py-3">{formatScore(registration.puntajeOnline)}</td>
                         <td className="px-3 py-3">
