@@ -8,9 +8,11 @@ import {
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { Toast } from "@/components/ui/Toast";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { adminPath } from "@/lib/admin/routes";
 import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
@@ -71,6 +73,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
   const [competitiveStatus, setCompetitiveStatus] = useState<
     "all" | CompetitiveStatus | "pendiente"
   >("all");
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -122,6 +125,25 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
     });
   }, [competitiveStatus, phaseFilter, registrationStatus, registrations, search]);
 
+  const omegaUpUsers = useMemo(() => {
+    const seen = new Set<string>();
+    return filteredRegistrations.reduce<string[]>((users, registration) => {
+      const userName = registration.teamOmegaUpUser.trim();
+      const normalized = userName.toLowerCase();
+      if (userName && !seen.has(normalized)) {
+        seen.add(normalized);
+        users.push(userName);
+      }
+      return users;
+    }, []);
+  }, [filteredRegistrations]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
   const stats = useMemo(() => {
     const total = registrations.length;
     const online = registrations.filter((registration) => {
@@ -155,8 +177,25 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
     ];
   }, [category, registrations]);
 
+  const handleCopyOmegaUpUsers = async () => {
+    if (!omegaUpUsers.length) {
+      setToast({ message: "Los equipos filtrados no tienen usuarios de OmegaUp para copiar.", variant: "info" });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(omegaUpUsers.join("\n"));
+      setToast({
+        message: `${omegaUpUsers.length} usuario${omegaUpUsers.length === 1 ? "" : "s"} de OmegaUp copiado${omegaUpUsers.length === 1 ? "" : "s"}.`,
+        variant: "success",
+      });
+    } catch {
+      setToast({ message: "No se pudieron copiar los usuarios de OmegaUp.", variant: "error" });
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {toast ? <Toast message={toast.message} variant={toast.variant} /> : null}
       <AdminTopbar subtitle={subtitle} title={title} />
 
       {message ? (
@@ -229,6 +268,15 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
               ]}
               value={competitiveStatus}
             />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-csp-soft bg-csp-white p-3">
+            <p className="text-sm text-csp-black/70">
+              {omegaUpUsers.length} usuario{omegaUpUsers.length === 1 ? "" : "s"} de OmegaUp en los filtros actuales.
+            </p>
+            <Button disabled={!omegaUpUsers.length} onClick={() => void handleCopyOmegaUpUsers()} type="button" variant="secondary">
+              Copiar usuarios de OmegaUp
+            </Button>
           </div>
 
           {!filteredRegistrations.length ? (
