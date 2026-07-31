@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
       "assets/virtual-card/participacion-virtual-template.png",
       "assets/virtual-card/Poppins-SemiBold.ttf",
     ],
+    "/api/admin/virtual-card-assets": [
+      "assets/virtual-card/participacion-virtual-template.png",
+      "assets/virtual-card/Poppins-SemiBold.ttf",
+    ],
   },
 };
 

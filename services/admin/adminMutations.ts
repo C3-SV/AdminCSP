@@ -102,15 +102,17 @@ export async function sendVirtualInstructions({
   user,
   id,
   operationId,
+  card,
 }: {
   user: FirebaseSessionUser | null;
   id: string;
   operationId: string;
+  card: { fileName: string; content: string };
 }) {
   const body = await authorizedRequest(
     user,
     `/api/admin/registrations/${encodeURIComponent(id)}/emails/virtual-instructions`,
-    { method: "POST", body: JSON.stringify({ operationId }) },
+    { method: "POST", body: JSON.stringify({ operationId, card }) },
   );
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };

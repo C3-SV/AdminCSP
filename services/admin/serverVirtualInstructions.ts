@@ -1,11 +1,14 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import {
-  generateVirtualParticipationCard,
   getVirtualCardInput,
+  getVirtualCardFileName,
+  VIRTUAL_CARD_HEIGHT,
+  VIRTUAL_CARD_WIDTH,
   VirtualCardValidationError,
-} from "@/lib/cards/virtualParticipationCard";
+} from "@/lib/cards/virtualCardLayout";
 import { resolveVirtualInstructionRecipients } from "@/lib/email/virtualInstructionRecipients";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
 import { buildVirtualInstructionsContent, VIRTUAL_INSTRUCTIONS_SUBJECT } from "@/lib/email/virtualInstructionsContent";
@@ -20,6 +23,17 @@ import { AdminMutationError } from "@/services/admin/serverRegistrationActions";
 const REGISTRATIONS_COLLECTION = "registrations";
 const EMAIL_OUTBOX_COLLECTION = "emailOutbox";
 const EMAIL_LOGS_COLLECTION = "email_logs";
+const MAX_CARD_BYTES = 4 * 1024 * 1024;
+
+type ClientCardAttachment = {
+  fileName: string;
+  content: string;
+};
+
+type ValidatedCardAttachment = ClientCardAttachment & {
+  buffer: Buffer;
+  sha256: string;
+};
 
 function registrationRef(id: string) {
   return getAdminDb().collection(REGISTRATIONS_COLLECTION).doc(id);
@@ -36,6 +50,32 @@ function toRegistration(snapshot: FirebaseFirestore.DocumentSnapshot): Registrat
 
 async function readRegistration(id: string) {
   return toRegistration(await registrationRef(id).get());
+}
+
+function validateClientCardAttachment(
+  attachment: ClientCardAttachment | undefined,
+  registration: RegistrationDocument,
+): ValidatedCardAttachment {
+  if (!attachment || typeof attachment.fileName !== "string" || typeof attachment.content !== "string") {
+    throw new AdminMutationError("No se recibió la tarjeta personalizada generada por el navegador.", 422);
+  }
+  const input = getVirtualCardInput(registration);
+  if (attachment.fileName !== getVirtualCardFileName(input.teamName)) {
+    throw new AdminMutationError("El nombre de la tarjeta no coincide con el equipo.", 422);
+  }
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(attachment.content) || attachment.content.length > Math.ceil(MAX_CARD_BYTES * 4 / 3) + 4) {
+    throw new AdminMutationError("La tarjeta adjunta no tiene un formato válido.", 422);
+  }
+  const buffer = Buffer.from(attachment.content, "base64");
+  if (buffer.length < 24 || buffer.length > MAX_CARD_BYTES || buffer.toString("ascii", 1, 4) !== "PNG") {
+    throw new AdminMutationError("La tarjeta adjunta debe ser un PNG válido.", 422);
+  }
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  if (width !== VIRTUAL_CARD_WIDTH || height !== VIRTUAL_CARD_HEIGHT) {
+    throw new AdminMutationError("La tarjeta adjunta no tiene las dimensiones requeridas de 1400×1750.", 422);
+  }
+  return { ...attachment, buffer, sha256: createHash("sha256").update(buffer).digest("hex") };
 }
 
 export function getVirtualInstructionsDeliveryMode(): "live" | "dry_run" {
@@ -191,11 +231,13 @@ export async function sendVirtualInstructionsAsAdmin({
   id,
   operationId,
   updatedBy,
+  cardAttachment,
   sendEmail = sendBrevoEmail,
 }: {
   id: string;
   operationId: string;
   updatedBy: string;
+  cardAttachment?: ClientCardAttachment;
   sendEmail?: typeof sendBrevoEmail;
 }) {
   const registration = await readRegistration(id);
@@ -250,15 +292,15 @@ export async function sendVirtualInstructionsAsAdmin({
     attempts: 1,
   });
 
-  let card;
+  let card: ValidatedCardAttachment | undefined;
   try {
-    card = await generateVirtualParticipationCard(registration);
+    card = validateClientCardAttachment(cardAttachment, registration);
     const mode = getVirtualInstructionsDeliveryMode();
     const result = await sendEmail({
       to: recipients.to,
       cc: recipients.cc,
       ...content,
-      attachment: { name: card.fileName, content: card.buffer.toString("base64") },
+      attachment: { name: card.fileName, content: card.content },
       idempotencyKey: operationId,
       sandbox: mode === "dry_run",
     });

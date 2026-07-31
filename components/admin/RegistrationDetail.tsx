@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Toast } from "@/components/ui/Toast";
 import { REGISTRATION_CATEGORY_LABELS, REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
+import { generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
   saveRegistrationStatus,
@@ -133,7 +134,8 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const handleSend = async () => {
     setIsSending(true);
     try {
-      const result = await sendVirtualInstructions({ user, id: current.id, operationId: crypto.randomUUID() });
+      const card = await generateVirtualParticipationCardInBrowser({ user, registration: current });
+      const result = await sendVirtualInstructions({ user, id: current.id, operationId: crypto.randomUUID(), card });
       setCurrent(result.registration);
       if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
       setShowConfirmation(false);
