@@ -7,24 +7,17 @@ import {
   COMPETITIVE_STATUS_LABELS,
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
-import {
-  COMPETITIVE_ACTIONS,
-  CompetitiveActionKey,
-} from "@/lib/admin/competitiveActions";
-import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
-import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Toast } from "@/components/ui/Toast";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { adminPath } from "@/lib/admin/routes";
+import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 import {
   getRegistrationsByCategory,
   resolveRegistrationCompetitiveView,
 } from "@/services/admin/registrations";
-import { applyCompetitiveAction } from "@/services/admin/adminMutations";
 import {
   CompetitivePhase,
   CompetitiveStatus,
@@ -48,6 +41,16 @@ const STATUS_LABEL_MAP: Record<RegistrationStatus, string> = {
   pendiente_correccion: "Pendiente de correccion",
 };
 
+function virtualInstructionsLabel(registration: RegistrationDocument) {
+  const state = registration.emailStatus.virtualInstructions;
+  const date = state.lastSentAt ?? state.lastAttemptAt;
+  const suffix = date ? ` · ${formatDate(date)}` : "";
+  if (state.status === "sent") return `Enviado${suffix}`;
+  if (state.status === "failed") return `Falló${suffix}`;
+  if (state.status === "dry_run") return `Dry run${suffix}`;
+  return "Sin enviar";
+}
+
 function formatScore(value: number | null | undefined) {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "-";
@@ -56,12 +59,9 @@ function formatScore(value: number | null | undefined) {
 }
 
 export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPageProps) {
-  const { user } = useAdminAuth();
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
-  const [usingMockData, setUsingMockData] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState("");
   const [search, setSearch] = useState("");
   const [registrationStatus, setRegistrationStatus] = useState<"all" | RegistrationStatus>(
     "all",
@@ -70,12 +70,6 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
   const [competitiveStatus, setCompetitiveStatus] = useState<
     "all" | CompetitiveStatus | "pendiente"
   >("all");
-  const [actionByTeamId, setActionByTeamId] = useState<Record<string, CompetitiveActionKey>>({});
-  const [operationByTeamId, setOperationByTeamId] = useState<Record<string, string>>({});
-  const [toast, setToast] = useState<{
-    message: string;
-    variant: "success" | "error" | "info";
-  } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -85,7 +79,6 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
         return;
       }
       setRegistrations(response.registrations);
-      setUsingMockData(response.usingMockData);
       setMessage(response.message ?? "");
       setLoading(false);
     })();
@@ -94,14 +87,6 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
       mounted = false;
     };
   }, [category]);
-
-  useEffect(() => {
-    if (!toast) {
-      return;
-    }
-    const timeout = window.setTimeout(() => setToast(null), 3000);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
 
   const filteredRegistrations = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -169,79 +154,8 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
     ];
   }, [category, registrations]);
 
-  const handleActionChange = (registrationId: string, action: CompetitiveActionKey) => {
-    setActionByTeamId((current) => ({
-      ...current,
-      [registrationId]: action,
-    }));
-    setOperationByTeamId((current) => ({
-      ...current,
-      [registrationId]: crypto.randomUUID(),
-    }));
-  };
-
-  const handleApplyAction = async (registration: RegistrationDocument) => {
-    const actionKey = actionByTeamId[registration.id];
-    if (!actionKey) {
-      setToast({ message: "Selecciona una accion primero.", variant: "info" });
-      return;
-    }
-
-    if (!window.confirm("Vas a cambiar la fase de este equipo. Deseas continuar?")) {
-      return;
-    }
-
-    if (usingMockData) {
-      setToast({
-        message: "Modo prueba: Firebase no esta configurado, no se guardaron cambios.",
-        variant: "info",
-      });
-      return;
-    }
-
-    setSavingId(registration.id);
-    try {
-      const updatedRegistration = await applyCompetitiveAction({
-        user,
-        id: registration.id,
-        action: actionKey,
-        operationId: operationByTeamId[registration.id] ?? crypto.randomUUID(),
-      });
-
-      setRegistrations((current) =>
-        current.map((item) =>
-          item.id === registration.id
-            ? updatedRegistration
-            : item,
-        ),
-      );
-      setActionByTeamId((current) => {
-        const remaining = { ...current };
-        delete remaining[registration.id];
-        return remaining;
-      });
-      setOperationByTeamId((current) => {
-        const remaining = { ...current };
-        delete remaining[registration.id];
-        return remaining;
-      });
-      setToast({ message: "Fase competitiva actualizada y confirmada.", variant: "success" });
-    } catch (error) {
-      setToast({
-        message:
-          error instanceof Error
-            ? error.message
-            : "No fue posible actualizar la fase competitiva.",
-        variant: "error",
-      });
-    } finally {
-      setSavingId("");
-    }
-  };
-
   return (
     <div className="space-y-4">
-      {toast ? <Toast message={toast.message} variant={toast.variant} /> : null}
       <AdminTopbar subtitle={subtitle} title={title} />
 
       {message ? (
@@ -335,15 +249,13 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                     <th className="px-3 py-3 font-semibold">Puntaje online</th>
                     <th className="px-3 py-3 font-semibold">Puntaje presencial</th>
                     <th className="px-3 py-3 font-semibold">Fecha</th>
-                    <th className="px-3 py-3 font-semibold">Accion</th>
+                    <th className="px-3 py-3 font-semibold">Correo fase virtual</th>
+                    <th className="px-3 py-3 font-semibold">Detalle</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRegistrations.map((registration) => {
                     const competitionView = resolveRegistrationCompetitiveView(registration);
-                    const selectedAction = actionByTeamId[registration.id] ?? "";
-                    const savingRow = savingId === registration.id;
-
                     return (
                       <tr
                         className="border-t border-csp-soft hover:bg-csp-soft/40"
@@ -352,7 +264,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                         <td className="px-3 py-3 font-medium text-csp-primary">
                           {registration.teamName}
                         </td>
-                        <td className="px-3 py-3">{registration.institution}</td>
+                        <td className="px-3 py-3">{getInstitutionDisplay(registration)}</td>
                         <td className="px-3 py-3">
                           {formatPersonName(
                             registration.responsible?.firstName,
@@ -377,66 +289,31 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                           {formatScore(registration.puntajePresencial)}
                         </td>
                         <td className="px-3 py-3">{formatDate(registration.createdAt)}</td>
+                        <td className="px-3 py-3">{virtualInstructionsLabel(registration)}</td>
                         <td className="px-3 py-3">
-                          <div className="flex min-w-[260px] items-end gap-2">
-                            <Link
-                              aria-label={`Ver detalle de ${registration.teamName}`}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-csp-primary text-csp-primary hover:bg-csp-soft"
-                              href={adminPath(`/inscripciones/${registration.id}`)}
-                              title="Ver detalle"
+                          <Link
+                            aria-label={`Ver detalle de ${registration.teamName}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-csp-primary text-csp-primary hover:bg-csp-soft"
+                            href={adminPath(`/inscripciones/${registration.id}`)}
+                            title="Ver detalle"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
                             >
-                              <svg
-                                aria-hidden="true"
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"
-                                  stroke="currentColor"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="1.8"
-                                />
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="3"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                />
-                              </svg>
-                            </Link>
-                            <Select
-                              className="h-9"
-                              disabled={savingRow}
-                              id={`action-${registration.id}`}
-                              onChange={(event) =>
-                                handleActionChange(
-                                  registration.id,
-                                  event.target.value as CompetitiveActionKey,
-                                )
-                              }
-                              options={Object.entries(COMPETITIVE_ACTIONS).map(
-                                ([value, action]) => ({
-                                  value,
-                                  label: action.label,
-                                }),
-                              )}
-                              placeholder="Selecciona una acción"
-                              value={selectedAction}
-                            />
-                            <Button
-                              className="h-9 px-3"
-                              isLoading={savingRow}
-                              onClick={() => void handleApplyAction(registration)}
-                              type="button"
-                              variant="secondary"
-                            >
-                              Aplicar
-                            </Button>
-                          </div>
+                              <path
+                                d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.8"
+                              />
+                              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+                            </svg>
+                          </Link>
                         </td>
                       </tr>
                     );
