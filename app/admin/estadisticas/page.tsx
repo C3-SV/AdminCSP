@@ -4,39 +4,37 @@ import { useEffect, useMemo, useState } from "react";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
-import {
-  countByStatus,
-  countParticipants,
-  uniqueInstitutions,
-} from "@/utils/admin/metrics";
-import { getRegistrations } from "@/services/admin/registrations";
-import { RegistrationDocument } from "@/types/admin/registration";
+import { REGISTRATION_CATEGORY_LABELS } from "@/constants/admin";
+import { getRegistrations, resolveRegistrationCompetitiveView } from "@/services/admin/registrations";
+import { KnownRegistrationCategory, RegistrationDocument } from "@/types/admin/registration";
+import { countByStatus, countParticipants, uniqueInstitutions } from "@/utils/admin/metrics";
 
-function BarRow({
-  label,
-  value,
-  total,
-}: {
-  label: string;
-  value: number;
-  total: number;
-}) {
+function BarRow({ label, value, total }: { label: string; value: number; total: number }) {
   const percentage = total ? Math.round((value / total) * 100) : 0;
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between gap-3 text-sm">
         <span>{label}</span>
-        <span>{value}</span>
+        <span className="whitespace-nowrap">{value} · {percentage}%</span>
       </div>
       <div className="h-2 rounded-full bg-csp-soft">
-        <div
-          className="h-2 rounded-full bg-csp-blue"
-          style={{ width: `${percentage}%` }}
-        />
+        <div className="h-2 rounded-full bg-csp-blue" style={{ width: `${percentage}%` }} />
       </div>
     </div>
   );
 }
+
+function average(values: Array<number | null | undefined>) {
+  const defined = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return defined.length ? Math.round((defined.reduce((sum, value) => sum + value, 0) / defined.length) * 10) / 10 : null;
+}
+
+function isReachable(registration: RegistrationDocument) {
+  return [registration.responsible?.email, registration.contactEmail, ...registration.members.map((member) => member.email)]
+    .some((email) => Boolean(email?.trim()));
+}
+
+const CATEGORIES: KnownRegistrationCategory[] = ["colegios", "universidades", "ade"];
 
 export default function AdminEstadisticasPage() {
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
@@ -45,120 +43,164 @@ export default function AdminEstadisticasPage() {
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      const response = await getRegistrations();
-      if (!mounted) {
-        return;
-      }
+    void getRegistrations().then((response) => {
+      if (!mounted) return;
       setRegistrations(response.registrations);
       setMessage(response.message ?? "");
       setLoading(false);
-    })();
-
-    return () => {
-      mounted = false;
-    };
+    });
+    return () => { mounted = false; };
   }, []);
 
   const totals = useMemo(() => {
     const total = registrations.length;
-    const colegios = registrations.filter((item) => item.category === "colegios").length;
-    const universidades = registrations.filter(
-      (item) => item.category === "universidades",
-    ).length;
-    const ade = registrations.filter((item) => item.category === "ade").length;
     const aprobadas = countByStatus(registrations, "aprobada");
-    const enRevision = countByStatus(registrations, "en_revision");
     const rechazadas = countByStatus(registrations, "rechazada");
     const pendientes = countByStatus(registrations, "pendiente_correccion");
-    const participantes = countParticipants(registrations);
+    const enRevision = countByStatus(registrations, "en_revision");
+    const reviewed = aprobadas + rechazadas;
+    const requiresReview = total - reviewed;
+    const emailSent = registrations.filter((item) => item.emailStatus.virtualInstructions.status === "sent").length;
+    const emailDryRun = registrations.filter((item) => item.emailStatus.virtualInstructions.status === "dry_run").length;
+    const emailFailed = registrations.filter((item) => item.emailStatus.virtualInstructions.status === "failed").length;
+    const approvedWithoutEmail = registrations.filter(
+      (item) => item.status === "aprobada" && item.emailStatus.virtualInstructions.status === "not_sent",
+    ).length;
+    const competition = registrations.map((registration) => ({ registration, view: resolveRegistrationCompetitiveView(registration) }));
+    const phaseOnline = competition.filter(({ view }) => view.faseActualMostrada === "online").length;
+    const onlineParticipating = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "participando").length;
+    const onlineScores = registrations.filter((item) => typeof item.puntajeOnline === "number");
+    const progressedToOnsite = competition.filter(({ view }) =>
+      view.faseActualMostrada === "presencial" ||
+      view.faseActualMostrada === "final" ||
+      view.estadoCompetitivoMostrado === "clasificado" ||
+      view.estadoCompetitivoMostrado === "finalista" ||
+      view.estadoCompetitivoMostrado === "ganador",
+    ).length;
+    const onsiteScores = registrations.filter((item) => typeof item.puntajePresencial === "number");
+    const finalists = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "finalista").length;
+    const winners = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "ganador").length;
+    const byCategory = CATEGORIES.map((category) => {
+      const teams = registrations.filter((item) => item.category === category);
+      return {
+        category,
+        total: teams.length,
+        approved: teams.filter((item) => item.status === "aprobada").length,
+        emailSent: teams.filter((item) => item.emailStatus.virtualInstructions.status === "sent").length,
+        online: teams.filter((item) => item.faseActual === "online").length,
+        progressedToOnsite: teams.filter((item) =>
+          item.faseActual === "presencial" || item.faseActual === "final" ||
+          item.estadoCompetitivo === "clasificado" || item.estadoCompetitivo === "finalista" || item.estadoCompetitivo === "ganador",
+        ).length,
+      };
+    });
 
     return {
       total,
-      colegios,
-      universidades,
-      ade,
+      participantes: countParticipants(registrations),
       aprobadas,
-      enRevision,
       rechazadas,
       pendientes,
-      participantes,
+      enRevision,
+      reviewed,
+      requiresReview,
+      noContact: registrations.filter((item) => !isReachable(item)).length,
+      emailSent,
+      emailDryRun,
+      emailFailed,
+      approvedWithoutEmail,
+      phaseOnline,
+      onlineParticipating,
+      onlineScores: onlineScores.length,
+      averageOnlineScore: average(onlineScores.map((item) => item.puntajeOnline)),
+      progressedToOnsite,
+      onsiteScores: onsiteScores.length,
+      averageOnsiteScore: average(onsiteScores.map((item) => item.puntajePresencial)),
+      finalists,
+      winners,
+      byCategory,
       topInstitutions: uniqueInstitutions(registrations),
     };
   }, [registrations]);
 
   return (
     <div className="space-y-4">
-      <AdminTopbar subtitle="Indicadores simples del módulo de inscripción." title="Estadísticas" />
-      {message ? (
-        <p className="rounded-md border border-csp-warning/40 bg-csp-warning/10 px-3 py-2 text-sm text-csp-black">
-          {message}
-        </p>
-      ) : null}
+      <AdminTopbar subtitle="Seguimiento operativo desde inscripción hasta resultados." title="Estadísticas" />
+      {message ? <p className="rounded-md border border-csp-warning/40 bg-csp-warning/10 px-3 py-2 text-sm text-csp-black">{message}</p> : null}
 
-      {loading ? (
-        <p className="text-sm text-csp-black/70">Cargando estadísticas...</p>
-      ) : (
+      {loading ? <p className="text-sm text-csp-black/70">Cargando estadísticas...</p> : (
         <>
-          <StatsCards
-            stats={[
-              { label: "Total equipos", value: totals.total },
-              { label: "Total participantes", value: totals.participantes },
-              { label: "Colegios", value: totals.colegios },
-              { label: "Universidades", value: totals.universidades },
-              { label: "AdE", value: totals.ade },
-              { label: "Aprobadas", value: totals.aprobadas },
-              { label: "En revisión", value: totals.enRevision },
-              { label: "Rechazadas", value: totals.rechazadas },
-              { label: "Pendientes de corrección", value: totals.pendientes },
-            ]}
-          />
+          <StatsCards stats={[
+            { label: "Total equipos", value: totals.total },
+            { label: "Total participantes", value: totals.participantes },
+            { label: "Aprobadas", value: totals.aprobadas },
+            { label: "Correos virtuales enviados", value: totals.emailSent },
+            { label: "Pendientes de correo", value: totals.approvedWithoutEmail },
+            { label: "Avanzaron a presencial", value: totals.progressedToOnsite },
+            { label: "Ganadores", value: totals.winners },
+          ]} />
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="space-y-3">
-              <h2 className="font-display text-lg font-semibold text-csp-primary">
-                Distribución por categoría
-              </h2>
-              <BarRow label="Colegios" total={totals.total} value={totals.colegios} />
-              <BarRow
-                label="Universidades"
-                total={totals.total}
-                value={totals.universidades}
-              />
-              <BarRow label="AdE" total={totals.total} value={totals.ade} />
-            </Card>
-
-            <Card className="space-y-3">
-              <h2 className="font-display text-lg font-semibold text-csp-primary">
-                Distribución por estado
-              </h2>
-              <BarRow
-                label="Recibidas"
-                total={totals.total}
-                value={countByStatus(registrations, "recibida")}
-              />
-              <BarRow label="En revisión" total={totals.total} value={totals.enRevision} />
+              <h2 className="font-display text-lg font-semibold text-csp-primary">1. Inscripción y revisión</h2>
+              <p className="text-sm text-csp-black/70">Control de entrada y aprobación de equipos.</p>
+              <BarRow label="Revisadas" total={totals.total} value={totals.reviewed} />
+              <BarRow label="Pendientes de revisión" total={totals.total} value={totals.requiresReview} />
               <BarRow label="Aprobadas" total={totals.total} value={totals.aprobadas} />
+              <BarRow label="Pendiente de corrección" total={totals.total} value={totals.pendientes} />
               <BarRow label="Rechazadas" total={totals.total} value={totals.rechazadas} />
-              <BarRow
-                label="Pendiente de corrección"
-                total={totals.total}
-                value={totals.pendientes}
-              />
+              <BarRow label="Sin correo de contacto" total={totals.total} value={totals.noContact} />
             </Card>
 
             <Card className="space-y-3">
-              <h2 className="font-display text-lg font-semibold text-csp-primary">
-                Top instituciones
-              </h2>
-              {totals.topInstitutions.map((item) => (
-                <BarRow
-                  key={item.institution}
-                  label={item.institution}
-                  total={totals.total}
-                  value={item.total}
-                />
-              ))}
+              <h2 className="font-display text-lg font-semibold text-csp-primary">2. Fase virtual y comunicación</h2>
+              <p className="text-sm text-csp-black/70">Entrega de indicaciones y avance en la etapa online.</p>
+              <BarRow label="Indicaciones enviadas" total={totals.aprobadas} value={totals.emailSent} />
+              <BarRow label="Aprobadas sin correo" total={totals.aprobadas} value={totals.approvedWithoutEmail} />
+              <BarRow label="Fallos de envío" total={totals.aprobadas} value={totals.emailFailed} />
+              <BarRow label="Pruebas Dry run" total={totals.aprobadas} value={totals.emailDryRun} />
+              <BarRow label="Con fase virtual asignada" total={totals.aprobadas} value={totals.phaseOnline} />
+              <BarRow label="Participando online" total={totals.aprobadas} value={totals.onlineParticipating} />
+              <BarRow label="Puntaje online cargado" total={totals.phaseOnline} value={totals.onlineScores} />
+              <p className="text-sm text-csp-black/70">Promedio online: <strong>{totals.averageOnlineScore ?? "Sin datos"}</strong></p>
+            </Card>
+
+            <Card className="space-y-3">
+              <h2 className="font-display text-lg font-semibold text-csp-primary">3. Presencial y resultados</h2>
+              <p className="text-sm text-csp-black/70">Equipos que avanzan y resultados disponibles.</p>
+              <BarRow label="Avanzaron a presencial" total={totals.total} value={totals.progressedToOnsite} />
+              <BarRow label="Puntaje presencial cargado" total={totals.progressedToOnsite} value={totals.onsiteScores} />
+              <BarRow label="Finalistas" total={totals.progressedToOnsite} value={totals.finalists} />
+              <BarRow label="Ganadores" total={totals.progressedToOnsite} value={totals.winners} />
+              <p className="text-sm text-csp-black/70">Promedio presencial: <strong>{totals.averageOnsiteScore ?? "Sin datos"}</strong></p>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="overflow-x-auto">
+              <h2 className="font-display text-lg font-semibold text-csp-primary">Avance por categoría</h2>
+              <p className="mt-1 text-sm text-csp-black/70">Comparación de cada categoría entre las etapas operativas.</p>
+              <table className="mt-4 min-w-full text-left text-sm">
+                <thead className="border-b border-csp-soft text-csp-primary">
+                  <tr>
+                    <th className="pb-2 pr-4 font-semibold">Categoría</th><th className="pb-2 pr-4 font-semibold">Equipos</th><th className="pb-2 pr-4 font-semibold">Aprobados</th><th className="pb-2 pr-4 font-semibold">Correo enviado</th><th className="pb-2 pr-4 font-semibold">Online</th><th className="pb-2 font-semibold">Presencial+</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {totals.byCategory.map((item) => (
+                    <tr className="border-b border-csp-soft/70" key={item.category}>
+                      <td className="py-2 pr-4 font-medium">{REGISTRATION_CATEGORY_LABELS[item.category]}</td><td className="py-2 pr-4">{item.total}</td><td className="py-2 pr-4">{item.approved}</td><td className="py-2 pr-4">{item.emailSent}</td><td className="py-2 pr-4">{item.online}</td><td className="py-2">{item.progressedToOnsite}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card className="space-y-3">
+              <h2 className="font-display text-lg font-semibold text-csp-primary">Instituciones con más equipos</h2>
+              {totals.topInstitutions.length ? totals.topInstitutions.map((item) => (
+                <BarRow key={item.institution} label={item.institution || "Sin institución"} total={totals.total} value={item.total} />
+              )) : <p className="text-sm text-csp-black/70">Aún no hay datos de instituciones.</p>}
             </Card>
           </div>
         </>
