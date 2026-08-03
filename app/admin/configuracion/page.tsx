@@ -3,6 +3,7 @@ import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
 import {
   EVENT_NAME,
+  ADE_PRESENTIAL_DATE,
   ONLINE_PHASE_DATE,
   SCHOOL_PRESENTIAL_DATE,
   UNIVERSITY_PRESENTIAL_DATE,
@@ -35,6 +36,7 @@ export default function AdminConfiguracionPage() {
           <p className="text-sm text-csp-black/70">
             Fase presencial universidades: {UNIVERSITY_PRESENTIAL_DATE}
           </p>
+          <p className="text-sm text-csp-black/70">Fase presencial AdE: {ADE_PRESENTIAL_DATE}</p>
         </Card>
 
         <Card className="space-y-2">

@@ -12,7 +12,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (typeof body.operationId !== "string" || !/^[a-zA-Z0-9_-]{16,120}$/.test(body.operationId)) return NextResponse.json({ ok: false, message: "Identificador de operación inválido." }, { status: 400 });
     if (!body.card || typeof body.card.fileName !== "string" || typeof body.card.content !== "string") return NextResponse.json({ ok: false, message: "No se recibió una tarjeta válida." }, { status: 400 });
     const admin = await requireAuthorizedAdmin(request);
-    return NextResponse.json({ ok: true, ...(await sendOnsiteClassificationAsAdmin({ id, operationId: body.operationId, updatedBy: admin.email, cardAttachment: body.card })) });
+    const cardAttachment = { fileName: body.card.fileName, content: body.card.content };
+    return NextResponse.json({ ok: true, ...(await sendOnsiteClassificationAsAdmin({ id, operationId: body.operationId, updatedBy: admin.email, cardAttachment })) });
   } catch (error) {
     if (error instanceof AdminAuthorizationError || error instanceof AdminMutationError) return NextResponse.json({ ok: false, message: error.message }, { status: error.status });
     console.error("Error enviando clasificación presencial:", error);
