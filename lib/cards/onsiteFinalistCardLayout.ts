@@ -20,7 +20,7 @@ export type OnsiteFinalistCardConfig = {
 
 const boxes = {
   teamName: { x: 135, y: 465, width: 810, height: 150, maxFontSize: 66, minFontSize: 28, maxLines: 2 },
-  institution: { x: 150, y: 705, width: 780, height: 72, maxFontSize: 38, minFontSize: 19, maxLines: 2 },
+  institution: { x: 150, y: 693, width: 780, height: 72, maxFontSize: 38, minFontSize: 19, maxLines: 2 },
   member1: { x: 150, y: 826, width: 780, height: 46, maxFontSize: 37, minFontSize: 19, maxLines: 1 },
   member2: { x: 150, y: 878, width: 780, height: 46, maxFontSize: 37, minFontSize: 19, maxLines: 1 },
   member3: { x: 150, y: 930, width: 780, height: 46, maxFontSize: 37, minFontSize: 19, maxLines: 1 },

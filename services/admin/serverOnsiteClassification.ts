@@ -6,7 +6,7 @@ import { getOnsiteFinalistFileName, ONSITE_FINALIST_CARD_HEIGHT, ONSITE_FINALIST
 import { getVirtualCardInput, VirtualCardValidationError } from "@/lib/cards/virtualCardLayout";
 import { resolveVirtualInstructionRecipients } from "@/lib/email/virtualInstructionRecipients";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
-import { buildOnsiteClassificationContent, ONSITE_CLASSIFICATION_SUBJECT } from "@/lib/email/onsiteClassificationContent";
+import { buildOnsiteClassificationContent } from "@/lib/email/onsiteClassificationContent";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { mapRegistrationFromFirestore } from "@/services/admin/registrations";
 import { AdminMutationError } from "@/services/admin/serverRegistrationActions";
@@ -38,15 +38,15 @@ function validateAttachment(attachment: ClientCardAttachment | undefined, regist
 
 function deliveryMode() { return process.env.CSP_EMAIL_DELIVERY_MODE === "live" ? "live" as const : "dry_run" as const; }
 
-async function persist({ id, operationId, updatedBy, recipients, status, attachment, messageId, errorMessage }: {
+async function persist({ id, operationId, updatedBy, recipients, subject, status, attachment, messageId, errorMessage }: {
   id: string; operationId: string; updatedBy: string; recipients: NonNullable<ReturnType<typeof resolveVirtualInstructionRecipients>>;
-  status: "sent" | "failed" | "dry_run"; attachment?: ValidatedAttachment; messageId?: string; errorMessage?: string;
+  subject: string; status: "sent" | "failed" | "dry_run"; attachment?: ValidatedAttachment; messageId?: string; errorMessage?: string;
 }): Promise<EmailLog> {
   const db = getAdminDb(); const logRef = db.collection("email_logs").doc(); const ref = teamRef(id);
   await db.runTransaction(async (transaction) => {
     const team = await transaction.get(ref);
     transaction.create(logRef, {
-      teamId: id, teamName: team.data()?.teamName ?? "", emailType: "classified_to_onsite", subject: ONSITE_CLASSIFICATION_SUBJECT,
+      teamId: id, teamName: team.data()?.teamName ?? "", emailType: "classified_to_onsite", subject,
       to: recipients.to.email, cc: recipients.cc.map((recipient) => recipient.email), status, createdBy: updatedBy,
       createdAt: FieldValue.serverTimestamp(), ...(status === "sent" ? { sentAt: FieldValue.serverTimestamp() } : {}),
       ...(messageId ? { brevoMessageId: messageId } : {}), ...(errorMessage ? { errorMessage } : {}),
@@ -60,7 +60,7 @@ async function persist({ id, operationId, updatedBy, recipients, status, attachm
     transaction.set(outboxRef(operationId), { status, logId: logRef.id, updatedAt: FieldValue.serverTimestamp(), ...(messageId ? { brevoMessageId: messageId } : {}), ...(errorMessage ? { lastError: errorMessage } : {}) }, { merge: true });
   });
   const data = (await logRef.get()).data() ?? {};
-  return { id: logRef.id, teamId: id, teamName: String(data.teamName ?? ""), emailType: "classified_to_onsite", subject: ONSITE_CLASSIFICATION_SUBJECT, to: recipients.to.email, cc: recipients.cc.map((recipient) => recipient.email), status, createdBy: updatedBy, attachment: attachment ? { name: attachment.fileName, contentType: "image/png", size: attachment.buffer.length, sha256: attachment.sha256 } : undefined, errorMessage, brevoMessageId: messageId };
+  return { id: logRef.id, teamId: id, teamName: String(data.teamName ?? ""), emailType: "classified_to_onsite", subject, to: recipients.to.email, cc: recipients.cc.map((recipient) => recipient.email), status, createdBy: updatedBy, attachment: attachment ? { name: attachment.fileName, contentType: "image/png", size: attachment.buffer.length, sha256: attachment.sha256 } : undefined, errorMessage, brevoMessageId: messageId };
 }
 
 export async function sendOnsiteClassificationAsAdmin({ id, operationId, updatedBy, cardAttachment, sendEmail = sendBrevoEmail }: {
@@ -80,15 +80,16 @@ export async function sendOnsiteClassificationAsAdmin({ id, operationId, updated
   }
   await outboxRef(operationId).create({ kind: "onsite_classification", registrationId: id, status: "processing", createdBy: updatedBy, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
   let attachment: ValidatedAttachment | undefined;
+  const content = buildOnsiteClassificationContent(registration);
   try {
     attachment = validateAttachment(cardAttachment, registration);
-    const result = await sendEmail({ to: recipients.to, cc: recipients.cc, ...buildOnsiteClassificationContent(registration), attachment: { name: attachment.fileName, content: attachment.content }, idempotencyKey: operationId, sandbox: deliveryMode() === "dry_run" });
+    const result = await sendEmail({ to: recipients.to, cc: recipients.cc, ...content, attachment: { name: attachment.fileName, content: attachment.content }, idempotencyKey: operationId, sandbox: deliveryMode() === "dry_run" });
     const status = deliveryMode() === "live" ? "sent" : "dry_run";
-    const log = await persist({ id, operationId, updatedBy, recipients, status, attachment, messageId: result.messageId });
+    const log = await persist({ id, operationId, updatedBy, recipients, subject: content.subject, status, attachment, messageId: result.messageId });
     return { registration: await readRegistration(id), log, alreadyProcessed: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "No fue posible enviar el correo de clasificación.";
-    const log = await persist({ id, operationId, updatedBy, recipients, status: "failed", attachment, errorMessage: message });
+    const log = await persist({ id, operationId, updatedBy, recipients, subject: content.subject, status: "failed", attachment, errorMessage: message });
     throw new AdminMutationError(`No fue posible enviar el correo de clasificación. Se registró el fallo (${log.id}).`, 502);
   }
 }
