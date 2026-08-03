@@ -15,11 +15,12 @@ import {
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
-import { generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
+import { generateOnsiteFinalistCardInBrowser, generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
   saveRegistrationStatus,
   saveRegistrationResults,
+  sendOnsiteClassification,
   sendVirtualInstructions,
 } from "@/services/admin/adminMutations";
 import type { EmailLog } from "@/types/admin/email";
@@ -59,6 +60,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingResults, setIsSavingResults] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isSendingOnsite, setIsSendingOnsite] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<"live" | "dry_run">("dry_run");
   const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
@@ -119,7 +121,9 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const copiedRecipients = contacts.filter((email) => email !== primaryRecipient);
 
   const virtualState = current.emailStatus.virtualInstructions;
+  const onsiteState = current.emailStatus.classifiedToOnsite;
   const canSend = current.status === "aprobada" && !usingMockData;
+  const canSendOnsite = current.estadoCompetitivo === "clasificado" && !usingMockData;
 
   const handleSave = async () => {
     if (usingMockData) {
@@ -201,6 +205,22 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
       setToast({ message: error instanceof Error ? error.message : "No fue posible enviar las indicaciones.", variant: "error" });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSendOnsite = async () => {
+    if (onsiteState.lastSentAt && !window.confirm("Este correo ya fue enviado. ¿Deseas reenviarlo?")) return;
+    setIsSendingOnsite(true);
+    try {
+      const card = await generateOnsiteFinalistCardInBrowser({ user, registration: current });
+      const result = await sendOnsiteClassification({ user, id: current.id, operationId: crypto.randomUUID(), card });
+      setCurrent(result.registration);
+      if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
+      setToast({ message: "Clasificación presencial procesada. Revisa el historial para confirmar el estado.", variant: "success" });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : "No fue posible enviar la clasificación presencial.", variant: "error" });
+    } finally {
+      setIsSendingOnsite(false);
     }
   };
 
@@ -290,7 +310,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
           <Card className="space-y-2 text-sm">
             <h3 className="font-display text-lg font-semibold text-csp-primary">Correos</h3>
             <p><strong>Indicaciones fase virtual:</strong> {statusLabel(virtualState.status)}{virtualState.lastAttemptAt ? ` · ${formatDate(virtualState.lastAttemptAt)}` : ""}</p>
-            <p><strong>Clasificado presencial:</strong> Próximamente</p>
+            <p><strong>Clasificación presencial:</strong> {statusLabel(onsiteState.status)}{onsiteState.lastAttemptAt ? ` · ${formatDate(onsiteState.lastAttemptAt)}` : ""}</p>
             <p><strong>No clasificado:</strong> Próximamente</p>
           </Card>
 
@@ -303,7 +323,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <ul className="mt-3 space-y-2 text-sm">
                 {logs.map((log) => (
                   <li className="rounded-md border border-csp-soft p-3" key={log.id}>
-                    <p className="font-semibold text-csp-primary">Indicaciones fase virtual · {statusLabel(log.status)}</p>
+                    <p className="font-semibold text-csp-primary">{log.emailType === "classified_to_onsite" ? "Clasificación presencial" : "Indicaciones fase virtual"} · {statusLabel(log.status)}</p>
                     <p>{formatDate(log.createdAt)} · {log.to}{log.cc.length ? ` · CC: ${log.cc.join(", ")}` : ""}</p>
                     {log.attachment ? <p className="text-csp-black/70">Adjunto: {log.attachment.name}</p> : null}
                     {log.errorMessage ? <p className="text-csp-danger">Error: {log.errorMessage}</p> : null}
@@ -321,6 +341,10 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               {virtualState.lastSentAt ? "Reenviar indicaciones fase virtual" : "Enviar indicaciones fase virtual"}
             </Button>
             {!canSend ? <p className="text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : "Disponible sólo cuando el equipo está aprobado."}</p> : null}
+            <Button disabled={!canSendOnsite} isLoading={isSendingOnsite} onClick={() => void handleSendOnsite()} type="button" variant="secondary">
+              {onsiteState.lastSentAt ? "Reenviar clasificación presencial" : "Enviar clasificación presencial"}
+            </Button>
+            {!canSendOnsite ? <p className="text-sm text-csp-black/70">Disponible sólo para equipos clasificados.</p> : null}
             <Button onClick={() => void handleCopyEmails()} type="button" variant="secondary">Copiar correos</Button>
           </Card>
 

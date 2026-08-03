@@ -6,17 +6,29 @@ import { AdminAuthorizationError, requireAuthorizedAdmin } from "@/lib/admin/ser
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const assetsDirectory = path.join(process.cwd(), "assets", "virtual-card");
+const virtualAssetsDirectory = path.join(process.cwd(), "assets", "virtual-card");
+const onsiteAssetsDirectory = path.join(process.cwd(), "assets", "onsite-card");
 
 export async function GET(request: Request) {
   try {
     await requireAuthorizedAdmin(request);
-    const [template, font] = await Promise.all([
-      readFile(path.join(assetsDirectory, "participacion-virtual-template.png")),
-      readFile(path.join(assetsDirectory, "Poppins-SemiBold.ttf")),
+    const [template, font, colegios, universidades, ade] = await Promise.all([
+      readFile(path.join(virtualAssetsDirectory, "participacion-virtual-template.png")),
+      readFile(path.join(virtualAssetsDirectory, "Poppins-SemiBold.ttf")),
+      readFile(path.join(onsiteAssetsDirectory, "colegios-finalista.png")),
+      readFile(path.join(onsiteAssetsDirectory, "universidades-finalista.png")),
+      readFile(path.join(onsiteAssetsDirectory, "ade-finalista.png")),
     ]);
     return NextResponse.json(
-      { template: template.toString("base64"), font: font.toString("base64") },
+      {
+        template: template.toString("base64"),
+        font: font.toString("base64"),
+        onsiteTemplates: {
+          colegios: colegios.toString("base64"),
+          universidades: universidades.toString("base64"),
+          ade: ade.toString("base64"),
+        },
+      },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {

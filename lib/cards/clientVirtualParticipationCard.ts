@@ -8,7 +8,13 @@ import {
   getVirtualCardInput,
   type VirtualCardTextBox,
 } from "@/lib/cards/virtualCardLayout";
-import type { RegistrationDocument } from "@/types/admin/registration";
+import {
+  ONSITE_FINALIST_CARD_CONFIG,
+  ONSITE_FINALIST_CARD_HEIGHT,
+  ONSITE_FINALIST_CARD_WIDTH,
+  getOnsiteFinalistFileName,
+} from "@/lib/cards/onsiteFinalistCardLayout";
+import type { KnownRegistrationCategory, RegistrationDocument } from "@/types/admin/registration";
 
 type FirebaseSessionUser = { getIdToken: () => Promise<string> };
 
@@ -17,7 +23,7 @@ export type ClientVirtualCard = {
   content: string;
 };
 
-type CardAssets = { template: string; font: string };
+type CardAssets = { template: string; font: string; onsiteTemplates?: Partial<Record<KnownRegistrationCategory, string>> };
 
 const FONT_FAMILY = "CSP Virtual Card Poppins";
 let assetsPromise: Promise<CardAssets> | undefined;
@@ -39,7 +45,7 @@ async function loadAssets(user: FirebaseSessionUser | null) {
       if (!response.ok || !body.template || !body.font) {
         throw new Error(body.message || "No fue posible cargar los recursos de la tarjeta.");
       }
-      return { template: body.template, font: body.font };
+      return { template: body.template, font: body.font, onsiteTemplates: body.onsiteTemplates };
     })().catch((error) => {
       assetsPromise = undefined;
       throw error;
@@ -148,4 +154,39 @@ export async function generateVirtualParticipationCardInBrowser({
   const start = Math.floor((memberBoxes.length - input.members.length) / 2);
   input.members.forEach((member, index) => drawFittedText(context, member, memberBoxes[start + index]));
   return { fileName: getVirtualCardFileName(input.teamName), content: await canvasPngBase64(canvas) };
+}
+
+export async function generateOnsiteFinalistCardInBrowser({
+  user,
+  registration,
+}: {
+  user: FirebaseSessionUser | null;
+  registration: RegistrationDocument;
+}): Promise<ClientVirtualCard> {
+  if (registration.category === "desconocida") throw new Error("La categoría del equipo no es válida para la tarjeta presencial.");
+  const input = getVirtualCardInput(registration);
+  const config = ONSITE_FINALIST_CARD_CONFIG[registration.category];
+  const assets = await loadAssets(user);
+  const templateSource = assets.onsiteTemplates?.[registration.category];
+  if (!templateSource) throw new Error("No se encontró la plantilla de clasificación presencial para esta categoría.");
+  await loadFont(assets.font);
+  await document.fonts.ready;
+  const template = await loadImage(asDataUrl("image/png", templateSource));
+  const canvas = document.createElement("canvas");
+  canvas.width = ONSITE_FINALIST_CARD_WIDTH;
+  canvas.height = ONSITE_FINALIST_CARD_HEIGHT;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("El navegador no pudo crear la tarjeta.");
+  context.drawImage(template, 0, 0, ONSITE_FINALIST_CARD_WIDTH, ONSITE_FINALIST_CARD_HEIGHT);
+  context.fillStyle = "#ffffff";
+  context.textAlign = "center";
+  context.textBaseline = "alphabetic";
+  drawFittedText(context, input.teamName, config.boxes.teamName);
+  context.fillStyle = "#89d7d1";
+  drawFittedText(context, input.institution, config.boxes.institution);
+  context.fillStyle = "#ffffff";
+  const memberBoxes = [config.boxes.member1, config.boxes.member2, config.boxes.member3];
+  const start = Math.floor((memberBoxes.length - input.members.length) / 2);
+  input.members.forEach((member, index) => drawFittedText(context, member, memberBoxes[start + index]));
+  return { fileName: getOnsiteFinalistFileName(input.teamName), content: await canvasPngBase64(canvas) };
 }
