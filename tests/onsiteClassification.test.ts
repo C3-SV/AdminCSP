@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import path from "node:path";
 import sharp from "sharp";
-import { ONSITE_FINALIST_CARD_CONFIG, ONSITE_FINALIST_CARD_HEIGHT, ONSITE_FINALIST_CARD_WIDTH } from "@/lib/cards/onsiteFinalistCardLayout";
+import { ONSITE_FINALIST_CARD_CONFIG, ONSITE_FINALIST_CARD_HEIGHT, ONSITE_FINALIST_CARD_WIDTH, ONSITE_FINALIST_STORY_CONFIG, ONSITE_FINALIST_STORY_HEIGHT, ONSITE_FINALIST_STORY_WIDTH } from "@/lib/cards/onsiteFinalistCardLayout";
 import { buildOnsiteClassificationContent } from "@/lib/email/onsiteClassificationContent";
 import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 import type { KnownRegistrationCategory, RegistrationDocument } from "@/types/admin/registration";
@@ -28,5 +28,16 @@ describe("tarjetas y correo de clasificación presencial", () => {
     const content = buildOnsiteClassificationContent(team(category));
     expect(content.textContent).toContain(date);
     expect(content.textContent).toContain(ONSITE_FINALIST_CARD_CONFIG[category].categoryLabel);
+  });
+
+  it.each([
+    ["colegios", "colegios-finalista-story.png"],
+    ["universidades", "universidades-finalista-story.png"],
+    ["ade", "ade-finalista-story.png"],
+  ] as const)("usa historia 9:16 correcta para %s", async (category, fileName) => {
+    expect(ONSITE_FINALIST_STORY_CONFIG[category].finalDate).toBe(ONSITE_FINALIST_CARD_CONFIG[category].finalDate);
+    const metadata = await sharp(path.join(process.cwd(), "assets", "onsite-card", fileName)).metadata();
+    expect(metadata.width).toBe(ONSITE_FINALIST_STORY_WIDTH);
+    expect(metadata.height).toBe(ONSITE_FINALIST_STORY_HEIGHT);
   });
 });

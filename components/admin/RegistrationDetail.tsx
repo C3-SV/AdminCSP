@@ -15,7 +15,7 @@ import {
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
-import { generateOnsiteFinalistCardInBrowser, generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
+import { generateOnsiteFinalistCardInBrowser, generateOnsiteFinalistStoryInBrowser, generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
   saveRegistrationStatus,
@@ -212,8 +212,11 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
     if (onsiteState.lastSentAt && !window.confirm("Este correo ya fue enviado. ¿Deseas reenviarlo?")) return;
     setIsSendingOnsite(true);
     try {
-      const card = await generateOnsiteFinalistCardInBrowser({ user, registration: current });
-      const result = await sendOnsiteClassification({ user, id: current.id, operationId: crypto.randomUUID(), card });
+      const [post, story] = await Promise.all([
+        generateOnsiteFinalistCardInBrowser({ user, registration: current }),
+        generateOnsiteFinalistStoryInBrowser({ user, registration: current }),
+      ]);
+      const result = await sendOnsiteClassification({ user, id: current.id, operationId: crypto.randomUUID(), cards: { post, story } });
       setCurrent(result.registration);
       if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
       setToast({ message: "Clasificación presencial procesada. Revisa el historial para confirmar el estado.", variant: "success" });

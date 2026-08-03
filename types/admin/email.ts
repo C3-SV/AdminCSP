@@ -38,6 +38,12 @@ export type EmailLog = {
     size: number;
     sha256: string;
   };
+  attachments?: Array<{
+    name: string;
+    contentType: "image/png";
+    size: number;
+    sha256: string;
+  }>;
   errorMessage?: string;
   createdBy: string;
   createdAt?: string;

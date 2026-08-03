@@ -13,6 +13,7 @@ type BrevoCommonInput = {
     name: string;
     content: string;
   };
+  attachments?: Array<{ name: string; content: string }>;
   sandbox?: boolean;
 };
 
@@ -48,7 +49,7 @@ function getBrevoApiKey() {
 }
 
 export async function sendBrevoEmail(input: SendBrevoEmailInput): Promise<BrevoSendEmailResponse> {
-  const { to, cc = [], idempotencyKey, attachment, sandbox = false } = input;
+  const { to, cc = [], idempotencyKey, attachment, attachments, sandbox = false } = input;
   const apiKey = getBrevoApiKey();
 
   const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
@@ -80,8 +81,9 @@ export async function sendBrevoEmail(input: SendBrevoEmailInput): Promise<BrevoS
       "X-Sib-Sandbox": "drop",
     };
   }
-  if (attachment) {
-    body.attachment = [attachment];
+  const allAttachments = attachments ?? (attachment ? [attachment] : []);
+  if (allAttachments.length) {
+    body.attachment = allAttachments;
   }
 
   if (senderEmail) {

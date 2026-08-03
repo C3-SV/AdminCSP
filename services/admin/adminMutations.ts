@@ -148,17 +148,17 @@ export async function sendOnsiteClassification({
   user,
   id,
   operationId,
-  card,
+  cards,
 }: {
   user: FirebaseSessionUser | null;
   id: string;
   operationId: string;
-  card: { fileName: string; content: string };
+  cards: { post: { fileName: string; content: string }; story: { fileName: string; content: string } };
 }) {
   const body = await authorizedRequest(
     user,
     `/api/admin/registrations/${encodeURIComponent(id)}/emails/onsite-classification`,
-    { method: "POST", body: JSON.stringify({ operationId, card }) },
+    { method: "POST", body: JSON.stringify({ operationId, cards }) },
   );
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };

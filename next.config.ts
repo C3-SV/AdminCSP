@@ -25,6 +25,9 @@ const nextConfig: NextConfig = {
       "assets/onsite-card/colegios-finalista.png",
       "assets/onsite-card/universidades-finalista.png",
       "assets/onsite-card/ade-finalista.png",
+      "assets/onsite-card/colegios-finalista-story.png",
+      "assets/onsite-card/universidades-finalista-story.png",
+      "assets/onsite-card/ade-finalista-story.png",
     ],
   },
 };

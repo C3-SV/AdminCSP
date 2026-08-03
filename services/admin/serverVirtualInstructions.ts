@@ -94,6 +94,11 @@ function mapEmailLog(id: string, data: Record<string, unknown>): EmailLog {
   const attachment = data.attachment && typeof data.attachment === "object"
     ? (data.attachment as Record<string, unknown>)
     : null;
+  const attachments = Array.isArray(data.attachments)
+    ? data.attachments.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object").map((item) => ({
+        name: String(item.name ?? ""), contentType: "image/png" as const, size: Number(item.size ?? 0), sha256: String(item.sha256 ?? ""),
+      }))
+    : undefined;
   return {
     id,
     teamId: String(data.teamId ?? ""),
@@ -112,6 +117,7 @@ function mapEmailLog(id: string, data: Record<string, unknown>): EmailLog {
           sha256: String(attachment.sha256 ?? ""),
         }
       : undefined,
+    attachments,
     errorMessage: typeof data.errorMessage === "string" ? data.errorMessage : undefined,
     createdBy: String(data.createdBy ?? ""),
     createdAt: serializeTimestamp(data.createdAt),

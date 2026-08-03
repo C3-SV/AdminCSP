@@ -12,12 +12,15 @@ const onsiteAssetsDirectory = path.join(process.cwd(), "assets", "onsite-card");
 export async function GET(request: Request) {
   try {
     await requireAuthorizedAdmin(request);
-    const [template, font, colegios, universidades, ade] = await Promise.all([
+    const [template, font, colegios, universidades, ade, colegiosStory, universidadesStory, adeStory] = await Promise.all([
       readFile(path.join(virtualAssetsDirectory, "participacion-virtual-template.png")),
       readFile(path.join(virtualAssetsDirectory, "Poppins-SemiBold.ttf")),
       readFile(path.join(onsiteAssetsDirectory, "colegios-finalista.png")),
       readFile(path.join(onsiteAssetsDirectory, "universidades-finalista.png")),
       readFile(path.join(onsiteAssetsDirectory, "ade-finalista.png")),
+      readFile(path.join(onsiteAssetsDirectory, "colegios-finalista-story.png")),
+      readFile(path.join(onsiteAssetsDirectory, "universidades-finalista-story.png")),
+      readFile(path.join(onsiteAssetsDirectory, "ade-finalista-story.png")),
     ]);
     return NextResponse.json(
       {
@@ -27,6 +30,11 @@ export async function GET(request: Request) {
           colegios: colegios.toString("base64"),
           universidades: universidades.toString("base64"),
           ade: ade.toString("base64"),
+        },
+        onsiteStoryTemplates: {
+          colegios: colegiosStory.toString("base64"),
+          universidades: universidadesStory.toString("base64"),
+          ade: adeStory.toString("base64"),
         },
       },
       { headers: { "Cache-Control": "private, no-store" } },
