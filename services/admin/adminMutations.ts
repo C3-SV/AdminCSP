@@ -1,6 +1,11 @@
 import type { CompetitiveActionKey } from "@/lib/admin/competitiveActions";
 import type { EmailLog } from "@/types/admin/email";
-import type { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
+import type {
+  CompetitivePhase,
+  CompetitiveStatus,
+  RegistrationDocument,
+  RegistrationStatus,
+} from "@/types/admin/registration";
 
 type FirebaseSessionUser = {
   getIdToken: () => Promise<string>;
@@ -80,6 +85,27 @@ export function applyCompetitiveAction({
     `/api/admin/registrations/${encodeURIComponent(id)}/competitive-actions`,
     { method: "POST", body: JSON.stringify({ action, operationId }) },
   );
+}
+
+export function saveRegistrationResults({
+  user,
+  id,
+  puntajeOnline,
+  puntajePresencial,
+  faseActual,
+  estadoCompetitivo,
+}: {
+  user: FirebaseSessionUser | null;
+  id: string;
+  puntajeOnline: number | null;
+  puntajePresencial: number | null;
+  faseActual: CompetitivePhase;
+  estadoCompetitivo: CompetitiveStatus;
+}) {
+  return requestAdminMutation(user, `/api/admin/registrations/${encodeURIComponent(id)}/results`, {
+    method: "PATCH",
+    body: JSON.stringify({ puntajeOnline, puntajePresencial, faseActual, estadoCompetitivo }),
+  });
 }
 
 export async function getRegistrationEmailHistory({

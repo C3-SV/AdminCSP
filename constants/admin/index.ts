@@ -62,7 +62,7 @@ export const COMPETITIVE_STATUS_OPTIONS: Array<{
   { value: "no_clasificado", label: "No clasificado" },
   { value: "finalista", label: "Finalista" },
   { value: "ganador", label: "Ganador" },
-  { value: "eliminado", label: "Eliminado" },
+  { value: "eliminado", label: "Descalificado" },
 ];
 
 export const COMPETITIVE_PHASE_LABELS: Record<CompetitivePhase, string> = {
@@ -79,5 +79,5 @@ export const COMPETITIVE_STATUS_LABELS: Record<CompetitiveStatus, string> = {
   no_clasificado: "No clasificado",
   finalista: "Finalista",
   ganador: "Ganador",
-  eliminado: "Eliminado",
+  eliminado: "Descalificado",
 };

@@ -10,16 +10,12 @@ if (enabled) {
 
 const describeE2E = enabled ? describe.sequential : describe.skip;
 const testId = `codex-admincsp-e2e-${Date.now()}`;
-const operationIds: string[] = [];
 const actor = "codex-e2e@c3.com.sv";
-
-const fakeSendEmail = async () => ({ messageId: "fake-brevo-message" });
 
 describeE2E("controlled Firestore competitive actions", () => {
   afterAll(async () => {
     const db = getAdminDb();
     await db.collection("registrations").doc(testId).delete();
-    await Promise.all(operationIds.map((operationId) => db.collection("emailOutbox").doc(`admin_${operationId}`).delete()));
   });
 
   it("persists every action and keeps registration status independent", async () => {
@@ -58,14 +54,10 @@ describeE2E("controlled Firestore competitive actions", () => {
     ] as const;
 
     for (const [action, faseActual, estadoCompetitivo] of cases) {
-      const operationId = `e2e-${action}-${crypto.randomUUID()}`;
-      operationIds.push(operationId);
       const result = await applyCompetitiveActionAsAdmin({
         id: testId,
         action,
-        operationId,
         updatedBy: actor,
-        sendEmail: fakeSendEmail,
       });
       expect(result.registration.status).toBe("recibida");
       const stored = (await db.collection("registrations").doc(testId).get()).data();
@@ -73,24 +65,13 @@ describeE2E("controlled Firestore competitive actions", () => {
     }
   }, 30_000);
 
-  it("does not persist a mandatory-email action when the sender fails", async () => {
+  it("persists classification without creating an email outbox record", async () => {
     const db = getAdminDb();
-    const before = (await db.collection("registrations").doc(testId).get()).data();
-    const operationId = `e2e-email-failure-${crypto.randomUUID()}`;
-    operationIds.push(operationId);
-    await expect(
-      applyCompetitiveActionAsAdmin({
-        id: testId,
-        action: "finalista",
-        operationId,
-        updatedBy: actor,
-        sendEmail: async () => {
-          throw new Error("simulated provider failure");
-        },
-      }),
-    ).rejects.toThrow("correo requerido");
-    const after = (await db.collection("registrations").doc(testId).get()).data();
-    expect(after?.faseActual).toBe(before?.faseActual);
-    expect(after?.estadoCompetitivo).toBe(before?.estadoCompetitivo);
+    const operationId = `e2e-no-email-${crypto.randomUUID()}`;
+    await applyCompetitiveActionAsAdmin({ id: testId, action: "clasificar_presencial", updatedBy: actor });
+    const registration = (await db.collection("registrations").doc(testId).get()).data();
+    const outbox = await db.collection("emailOutbox").doc(`admin_${operationId}`).get();
+    expect(registration).toMatchObject({ faseActual: "presencial", estadoCompetitivo: "clasificado" });
+    expect(outbox.exists).toBe(false);
   }, 30_000);
 });

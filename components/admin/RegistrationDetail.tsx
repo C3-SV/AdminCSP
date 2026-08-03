@@ -4,19 +4,31 @@ import { useEffect, useMemo, useState } from "react";
 import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Toast } from "@/components/ui/Toast";
-import { REGISTRATION_CATEGORY_LABELS, REGISTRATION_STATUS_OPTIONS } from "@/constants/admin";
+import {
+  COMPETITIVE_PHASE_OPTIONS,
+  COMPETITIVE_STATUS_OPTIONS,
+  REGISTRATION_CATEGORY_LABELS,
+  REGISTRATION_STATUS_OPTIONS,
+} from "@/constants/admin";
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
 import { generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
   saveRegistrationStatus,
+  saveRegistrationResults,
   sendVirtualInstructions,
 } from "@/services/admin/adminMutations";
 import type { EmailLog } from "@/types/admin/email";
-import type { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
+import type {
+  CompetitivePhase,
+  CompetitiveStatus,
+  RegistrationDocument,
+  RegistrationStatus,
+} from "@/types/admin/registration";
 import { formatDate, formatPersonName } from "@/utils/admin";
 
 function memberName(firstName: string, lastName: string) {
@@ -45,9 +57,14 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingResults, setIsSavingResults] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<"live" | "dry_run">("dry_run");
+  const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
+  const [onsiteScore, setOnsiteScore] = useState(registration.puntajePresencial?.toString() ?? "");
+  const [phase, setPhase] = useState<CompetitivePhase>(registration.faseActual ?? "online");
+  const [competitiveState, setCompetitiveState] = useState<CompetitiveStatus>(registration.estadoCompetitivo ?? "participando");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   const reloadHistory = async () => {
@@ -131,6 +148,46 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
     }
   };
 
+  const readScore = (value: string, label: string) => {
+    if (!value.trim()) return null;
+    const score = Number(value);
+    if (!Number.isFinite(score) || score < 0) throw new Error(`${label} debe ser un número igual o mayor que cero.`);
+    return score;
+  };
+
+  const handleSaveResults = async (overrides?: {
+    phase?: CompetitivePhase;
+    status?: CompetitiveStatus;
+  }) => {
+    if (usingMockData) {
+      setToast({ message: "Modo prueba: Firebase no está configurado, no se guardaron cambios.", variant: "info" });
+      return;
+    }
+    setIsSavingResults(true);
+    try {
+      const selectedPhase = overrides?.phase ?? phase;
+      const selectedStatus = overrides?.status ?? competitiveState;
+      const updated = await saveRegistrationResults({
+        user,
+        id: current.id,
+        puntajeOnline: readScore(onlineScore, "Puntaje online"),
+        puntajePresencial: readScore(onsiteScore, "Puntaje presencial"),
+        faseActual: selectedPhase,
+        estadoCompetitivo: selectedStatus,
+      });
+      setCurrent(updated);
+      setOnlineScore(updated.puntajeOnline?.toString() ?? "");
+      setOnsiteScore(updated.puntajePresencial?.toString() ?? "");
+      setPhase(updated.faseActual ?? selectedPhase);
+      setCompetitiveState(updated.estadoCompetitivo ?? selectedStatus);
+      setToast({ message: "Resultados y estado competitivo guardados. No se envió ningún correo.", variant: "success" });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : "No fue posible guardar los resultados.", variant: "error" });
+    } finally {
+      setIsSavingResults(false);
+    }
+  };
+
   const handleSend = async () => {
     setIsSending(true);
     try {
@@ -169,6 +226,24 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <p><strong>Correo responsable:</strong> {current.responsible?.email || "-"}</p>
             <p><strong>Correo principal:</strong> {current.contactEmail || "-"}</p>
             <p><strong>Correos incluidos:</strong> {contacts.join(", ") || "-"}</p>
+          </Card>
+
+          <Card className="space-y-4">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-csp-primary">Resultados y avance competitivo</h3>
+              <p className="mt-1 text-sm text-csp-black/70">Guardar estos cambios no envía correos ni notificaciones.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input id="online-score" label="Puntaje online" min="0" onChange={(event) => setOnlineScore(event.target.value)} step="any" type="number" value={onlineScore} />
+              <Input id="onsite-score" label="Puntaje presencial" min="0" onChange={(event) => setOnsiteScore(event.target.value)} step="any" type="number" value={onsiteScore} />
+              <Select id="competitive-phase" label="Fase actual" onChange={(event) => setPhase(event.target.value as CompetitivePhase)} options={COMPETITIVE_PHASE_OPTIONS} value={phase} />
+              <Select id="competitive-status" label="Estado competitivo" onChange={(event) => setCompetitiveState(event.target.value as CompetitiveStatus)} options={COMPETITIVE_STATUS_OPTIONS} value={competitiveState} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button isLoading={isSavingResults} onClick={() => void handleSaveResults()} type="button">Guardar resultados</Button>
+              <Button disabled={isSavingResults} onClick={() => void handleSaveResults({ phase: "presencial", status: "clasificado" })} type="button" variant="secondary">Clasificar a presencial</Button>
+              <Button disabled={isSavingResults} onClick={() => void handleSaveResults({ phase: "cerrado", status: "eliminado" })} type="button" variant="danger">Descalificar equipo</Button>
+            </div>
           </Card>
 
           <Card>

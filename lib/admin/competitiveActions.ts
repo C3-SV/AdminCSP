@@ -1,4 +1,3 @@
-import type { TransactionalEmailType } from "@/lib/email/transactionalEmail";
 import type { CompetitivePhase, CompetitiveStatus } from "@/types/admin/registration";
 
 export const COMPETITIVE_ACTION_KEYS = [
@@ -16,10 +15,6 @@ export type CompetitiveAction = {
   label: string;
   faseActual: CompetitivePhase;
   estadoCompetitivo: CompetitiveStatus;
-  emailType?: Extract<
-    TransactionalEmailType,
-    "classified_to_onsite" | "not_classified" | "finalist" | "winner"
-  >;
 };
 
 export const COMPETITIVE_ACTIONS: Record<CompetitiveActionKey, CompetitiveAction> = {
@@ -32,25 +27,21 @@ export const COMPETITIVE_ACTIONS: Record<CompetitiveActionKey, CompetitiveAction
     label: "Clasificar a presencial",
     faseActual: "presencial",
     estadoCompetitivo: "clasificado",
-    emailType: "classified_to_onsite",
   },
   no_clasificado: {
     label: "Marcar como no clasificado",
     faseActual: "cerrado",
     estadoCompetitivo: "no_clasificado",
-    emailType: "not_classified",
   },
   finalista: {
     label: "Marcar como finalista",
     faseActual: "final",
     estadoCompetitivo: "finalista",
-    emailType: "finalist",
   },
   ganador: {
     label: "Marcar como ganador",
     faseActual: "cerrado",
     estadoCompetitivo: "ganador",
-    emailType: "winner",
   },
   eliminado: {
     label: "Marcar como eliminado",
