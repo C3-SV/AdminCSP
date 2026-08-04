@@ -20,7 +20,7 @@ export function EmailDeliverySwitch() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!user) return;
     let active = true;
     void getEmailDeliverySettings({ user }).then((next) => {
       if (active) setSettings(next);
@@ -30,8 +30,10 @@ export function EmailDeliverySwitch() {
     return () => { active = false; };
   }, [user]);
 
+  const busy = Boolean(user) && loading;
+
   const handleChange = async () => {
-    if (!user || saving || loading) return;
+    if (!user || saving || busy) return;
     const enabled = !settings.enabled;
     setSaving(true);
     setMessage("");
@@ -55,7 +57,7 @@ export function EmailDeliverySwitch() {
           aria-checked={settings.enabled}
           aria-label={settings.enabled ? "Desactivar todos los correos" : "Activar todos los correos"}
           className={`relative inline-flex h-8 w-14 items-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-csp-primary focus-visible:ring-offset-2 ${settings.enabled ? "bg-csp-blue" : "bg-csp-black/25"}`}
-          disabled={loading || saving || !user}
+          disabled={busy || saving || !user}
           onClick={() => void handleChange()}
           role="switch"
           type="button"
@@ -64,7 +66,7 @@ export function EmailDeliverySwitch() {
         </button>
       </div>
       <p className={`text-sm font-semibold ${settings.enabled ? "text-csp-blue" : "text-csp-error"}`}>
-        {loading ? "Cargando…" : settings.enabled ? "Correos habilitados" : "Correos bloqueados"}
+        {busy ? "Cargando…" : settings.enabled ? "Correos habilitados" : "Correos bloqueados"}
       </p>
       <p className="text-xs text-csp-black/65">Último cambio: {settings.updatedBy ?? "-"} · {formatUpdatedAt(settings.updatedAt)}</p>
       {message ? <p className="rounded-md bg-csp-error/10 px-3 py-2 text-sm text-csp-error">{message}</p> : null}
