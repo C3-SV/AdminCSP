@@ -62,6 +62,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [isSending, setIsSending] = useState(false);
   const [isSendingOnsite, setIsSendingOnsite] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showOnsiteConfirmation, setShowOnsiteConfirmation] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<"live" | "dry_run">("dry_run");
   const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
   const [onsiteScore, setOnsiteScore] = useState(registration.puntajePresencial?.toString() ?? "");
@@ -209,7 +210,6 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   };
 
   const handleSendOnsite = async () => {
-    if (onsiteState.lastSentAt && !window.confirm("Este correo ya fue enviado. ¿Deseas reenviarlo?")) return;
     setIsSendingOnsite(true);
     try {
       const [post, story] = await Promise.all([
@@ -219,6 +219,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
       const result = await sendOnsiteClassification({ user, id: current.id, operationId: crypto.randomUUID(), cards: { post, story } });
       setCurrent(result.registration);
       if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
+      setShowOnsiteConfirmation(false);
       setToast({ message: "Clasificación presencial procesada. Revisa el historial para confirmar el estado.", variant: "success" });
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : "No fue posible enviar la clasificación presencial.", variant: "error" });
@@ -344,7 +345,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               {virtualState.lastSentAt ? "Reenviar indicaciones fase virtual" : "Enviar indicaciones fase virtual"}
             </Button>
             {!canSend ? <p className="text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : "Disponible sólo cuando el equipo está aprobado."}</p> : null}
-            <Button disabled={!canSendOnsite} isLoading={isSendingOnsite} onClick={() => void handleSendOnsite()} type="button" variant="secondary">
+            <Button disabled={!canSendOnsite} onClick={() => setShowOnsiteConfirmation(true)} type="button" variant="secondary">
               {onsiteState.lastSentAt ? "Reenviar clasificación presencial" : "Enviar clasificación presencial"}
             </Button>
             {!canSendOnsite ? <p className="text-sm text-csp-black/70">Disponible sólo para equipos clasificados.</p> : null}
@@ -374,6 +375,25 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <div className="flex justify-end gap-2 pt-2">
               <Button disabled={isSending} onClick={() => setShowConfirmation(false)} type="button" variant="secondary">Cancelar</Button>
               <Button isLoading={isSending} onClick={() => void handleSend()} type="button">Confirmar envío</Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
+      {showOnsiteConfirmation ? (
+        <div aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-csp-black/50 p-4" role="dialog">
+          <Card className="w-full max-w-lg space-y-3 shadow-xl">
+            <h2 className="font-display text-xl font-semibold text-csp-primary">Confirmar clasificación presencial</h2>
+            <p className="text-sm"><strong>Equipo:</strong> {current.teamName}</p>
+            <p className="text-sm"><strong>Representando a:</strong> {getInstitutionDisplay(current)}</p>
+            <p className="text-sm"><strong>Integrantes:</strong> {current.members.map((member) => memberName(member.firstName, member.lastName)).join(", ")}</p>
+            <p className="text-sm"><strong>Para:</strong> {primaryRecipient || "Sin correo"}</p>
+            <p className="text-sm"><strong>CC:</strong> {copiedRecipients.join(", ") || "-"}</p>
+            <p className="text-sm"><strong>Adjuntos:</strong> tarjeta para publicación (1080×1350) y tarjeta para historia (1080×1920).</p>
+            <p className="text-sm"><strong>Modo:</strong> {deliveryMode === "live" ? "Envío real por Brevo" : "Dry run: Brevo valida sin entregar el correo"}</p>
+            {onsiteState.lastSentAt ? <p className="rounded-md bg-csp-warning/10 p-2 text-sm">Ya se envió exitosamente el {formatDate(onsiteState.lastSentAt)}. Esta acción generará un reenvío.</p> : null}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button disabled={isSendingOnsite} onClick={() => setShowOnsiteConfirmation(false)} type="button" variant="secondary">Cancelar</Button>
+              <Button isLoading={isSendingOnsite} onClick={() => void handleSendOnsite()} type="button">Confirmar envío</Button>
             </div>
           </Card>
         </div>

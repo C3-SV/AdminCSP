@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
+import { assertEmailDeliveryEnabled } from "@/lib/email/emailDeliveryControl";
 import type { TransactionalEmailType } from "@/lib/email/transactionalEmail";
 import {
   getAllowedOrigins as getConfiguredAllowedOrigins,
@@ -507,6 +508,7 @@ export async function POST(request: Request) {
       recipientEmailDomain: mapped.captainEmail.split("@")[1] ?? null,
     });
 
+    await assertEmailDeliveryEnabled();
     const brevoResponse = await sendBrevoEmail({
       to: {
         email: mapped.captainEmail,

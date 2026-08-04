@@ -11,6 +11,7 @@ import {
 } from "@/lib/cards/virtualCardLayout";
 import { resolveVirtualInstructionRecipients } from "@/lib/email/virtualInstructionRecipients";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
+import { assertEmailDeliveryEnabled } from "@/lib/email/emailDeliveryControl";
 import { buildVirtualInstructionsContent, VIRTUAL_INSTRUCTIONS_SUBJECT } from "@/lib/email/virtualInstructionsContent";
 import { getAdminDb } from "@/lib/firebase/admin";
 import {
@@ -300,6 +301,7 @@ export async function sendVirtualInstructionsAsAdmin({
 
   let card: ValidatedCardAttachment | undefined;
   try {
+    await assertEmailDeliveryEnabled();
     card = validateClientCardAttachment(cardAttachment, registration);
     const mode = getVirtualInstructionsDeliveryMode();
     const result = await sendEmail({

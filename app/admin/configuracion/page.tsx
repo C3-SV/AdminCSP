@@ -1,4 +1,5 @@
 import { AdminAuthStatusCard } from "@/components/admin/auth/AdminAuthStatusCard";
+import { EmailDeliverySwitch } from "@/components/admin/config/EmailDeliverySwitch";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
 import {
@@ -24,6 +25,7 @@ export default function AdminConfiguracionPage() {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
+        <EmailDeliverySwitch />
         <Card className="space-y-2">
           <h2 className="font-display text-lg font-semibold text-csp-primary">
             Información del evento

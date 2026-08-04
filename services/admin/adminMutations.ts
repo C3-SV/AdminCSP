@@ -18,6 +18,7 @@ type ApiResponse = {
   logs?: EmailLog[];
   log?: EmailLog;
   deliveryMode?: "live" | "dry_run";
+  settings?: { enabled: boolean; updatedBy?: string; updatedAt?: string };
 };
 
 async function authorizedRequest(
@@ -142,6 +143,20 @@ export async function sendVirtualInstructions({
   );
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };
+}
+
+export async function getEmailDeliverySettings({ user }: { user: FirebaseSessionUser | null }) {
+  const body = await authorizedRequest(user, "/api/admin/settings/email-delivery");
+  return body.settings ?? { enabled: false };
+}
+
+export async function setEmailDeliveryEnabled({ user, enabled }: { user: FirebaseSessionUser | null; enabled: boolean }) {
+  const body = await authorizedRequest(user, "/api/admin/settings/email-delivery", {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+  if (!body.settings) throw new Error("No se recibió la configuración actualizada.");
+  return body.settings;
 }
 
 export async function sendOnsiteClassification({

@@ -6,6 +6,7 @@ import { getOnsiteFinalistFileName, getOnsiteFinalistStoryFileName, ONSITE_FINAL
 import { getVirtualCardInput, VirtualCardValidationError } from "@/lib/cards/virtualCardLayout";
 import { resolveVirtualInstructionRecipients } from "@/lib/email/virtualInstructionRecipients";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
+import { assertEmailDeliveryEnabled } from "@/lib/email/emailDeliveryControl";
 import { buildOnsiteClassificationContent } from "@/lib/email/onsiteClassificationContent";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { mapRegistrationFromFirestore } from "@/services/admin/registrations";
@@ -77,6 +78,7 @@ export async function sendOnsiteClassificationAsAdmin({ id, operationId, updated
   let attachments: ValidatedAttachment[] | undefined;
   const content = buildOnsiteClassificationContent(registration);
   try {
+    await assertEmailDeliveryEnabled();
     attachments = [validateAttachment(cardAttachments?.post, registration, "post"), validateAttachment(cardAttachments?.story, registration, "story")];
     const result = await sendEmail({ to: recipients.to, cc: recipients.cc, ...content, attachments: attachments.map(({ fileName, content }) => ({ name: fileName, content })), idempotencyKey: operationId, sandbox: deliveryMode() === "dry_run" });
     const status = deliveryMode() === "live" ? "sent" : "dry_run";
