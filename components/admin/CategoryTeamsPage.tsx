@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Toast } from "@/components/ui/Toast";
 import { StatsCards } from "@/components/admin/StatsCards";
-import { adminPath } from "@/lib/admin/routes";
+import { registrationDetailHref } from "@/lib/admin/registrationNavigation";
 import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 import {
   getRegistrationsByCategory,
@@ -123,6 +123,8 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
       );
     });
   }, [competitiveStatus, phaseFilter, registrationStatus, registrations, search]);
+
+  const navigationIds = useMemo(() => filteredRegistrations.map((registration) => registration.id), [filteredRegistrations]);
 
   const omegaUpUsers = useMemo(() => {
     const seen = new Set<string>();
@@ -269,6 +271,10 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
             />
           </div>
 
+          <p className="rounded-lg border border-csp-soft bg-csp-white px-3 py-2 text-sm font-semibold text-csp-primary">
+            Resultados con los filtros actuales: {filteredRegistrations.length} de {registrations.length}
+          </p>
+
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-csp-soft bg-csp-white p-3">
             <p className="text-sm text-csp-black/70">
               {omegaUpUsers.length} usuario{omegaUpUsers.length === 1 ? "" : "s"} de OmegaUp en los filtros actuales.
@@ -342,7 +348,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                           <Link
                             aria-label={`Ver detalle de ${registration.teamName}`}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-csp-primary text-csp-primary hover:bg-csp-soft"
-                            href={adminPath(`/inscripciones/${registration.id}`)}
+                            href={registrationDetailHref(registration.id, navigationIds, `/${category}`)}
                             title="Ver detalle"
                           >
                             <svg

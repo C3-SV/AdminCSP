@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { REGISTRATION_CATEGORY_LABELS } from "@/constants/admin";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { adminPath } from "@/lib/admin/routes";
+import { registrationDetailHref } from "@/lib/admin/registrationNavigation";
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
 import type { RegistrationDocument } from "@/types/admin/registration";
 import { formatDate } from "@/utils/admin";
@@ -26,6 +26,8 @@ export function RegistrationsTable({ registrations }: { registrations: Registrat
   if (!registrations.length) {
     return <EmptyState description="No hay inscripciones que coincidan con los filtros actuales." title="Sin resultados" />;
   }
+
+  const navigationIds = registrations.map((registration) => registration.id);
 
   return (
     <div className="overflow-x-auto rounded-lg border border-csp-soft bg-csp-white shadow-csp">
@@ -53,7 +55,7 @@ export function RegistrationsTable({ registrations }: { registrations: Registrat
               <td className="px-3 py-3">{virtualEmailLabel(registration)}</td>
               <td className="px-3 py-3">{formatDate(registration.createdAt)}</td>
               <td className="px-3 py-3">
-                <Link className="font-semibold text-csp-blue hover:underline" href={adminPath(`/inscripciones/${registration.id}`)}>
+                <Link className="font-semibold text-csp-blue hover:underline" href={registrationDetailHref(registration.id, navigationIds, "/inscripciones")}>
                   Ver detalle
                 </Link>
               </td>

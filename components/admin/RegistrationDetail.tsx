@@ -238,6 +238,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <p><strong>Equipo:</strong> {current.teamName}</p>
             <p><strong>Categoría:</strong> {REGISTRATION_CATEGORY_LABELS[current.category]}</p>
             <p><strong>Representando a:</strong> {getInstitutionDisplay(current)}</p>
+            <p><strong>DescripciÃ³n del equipo:</strong> <span className="whitespace-pre-wrap">{current.teamDescription || "-"}</span></p>
             <p><strong>Estado de inscripción:</strong> {current.status}</p>
             <p><strong>Fecha de inscripción:</strong> {formatDate(current.createdAt)}</p>
             <p><strong>OmegaUp:</strong> {current.teamOmegaUpUser || "-"}</p>
