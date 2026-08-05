@@ -236,8 +236,9 @@ const COMPETITOR_CARD_HEIGHT = 1204;
 export const COMPETITOR_CARD_PRINT_WIDTH_CM = 7.3;
 export const COMPETITOR_CARD_PRINT_HEIGHT_CM = 10.2;
 const COMPETITOR_CARD_BOXES = {
-  name: { x: 72, y: 505, width: 500, height: 165, maxFontSize: 46, minFontSize: 20, maxLines: 2 },
-  team: { x: 72, y: 748, width: 500, height: 100, maxFontSize: 40, minFontSize: 18, maxLines: 2 },
+  // Long values retain the same two-line/minimum-size safety path in drawFittedText.
+  name: { x: 72, y: 493, width: 500, height: 172, maxFontSize: 58, minFontSize: 22, maxLines: 2 },
+  team: { x: 72, y: 728, width: 500, height: 132, maxFontSize: 52, minFontSize: 20, maxLines: 2 },
 } satisfies Record<string, VirtualCardTextBox>;
 
 type CompetitorPdfResult = { blob: Blob; fileName: string; cardCount: number; warnings: string[] };
