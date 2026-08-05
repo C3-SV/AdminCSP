@@ -233,6 +233,8 @@ export class CompetitorCardGenerationError extends Error {}
 
 const COMPETITOR_CARD_WIDTH = 862;
 const COMPETITOR_CARD_HEIGHT = 1204;
+export const COMPETITOR_CARD_PRINT_WIDTH_CM = 7.3;
+export const COMPETITOR_CARD_PRINT_HEIGHT_CM = 10.2;
 const COMPETITOR_CARD_BOXES = {
   name: { x: 72, y: 505, width: 500, height: 165, maxFontSize: 46, minFontSize: 20, maxLines: 2 },
   team: { x: 72, y: 748, width: 500, height: 100, maxFontSize: 40, minFontSize: 18, maxLines: 2 },
@@ -260,16 +262,18 @@ function joinBytes(parts: Uint8Array[]) {
   return result;
 }
 
-/** Creates a letter portrait PDF with six proportional cards per page (3 columns x 2 rows). */
+/** Creates a letter portrait PDF with six physical-size cards per page (2 columns x 3 rows, rotated). */
 export function buildSixUpLetterPdf(images: Uint8Array[]) {
   const pageWidth = 612;
   const pageHeight = 792;
-  const marginX = 18;
+  const pointsPerCentimeter = 72 / 2.54;
   const gapX = 8;
   const gapY = 8;
-  const cardWidth = (pageWidth - marginX * 2 - gapX * 2) / 3;
-  const cardHeight = cardWidth * COMPETITOR_CARD_HEIGHT / COMPETITOR_CARD_WIDTH;
-  const rowsHeight = cardHeight * 2 + gapY;
+  // The source is portrait (7.3 x 10.2 cm); rotate it to fit 2 x 3 on letter.
+  const cardWidth = COMPETITOR_CARD_PRINT_HEIGHT_CM * pointsPerCentimeter;
+  const cardHeight = COMPETITOR_CARD_PRINT_WIDTH_CM * pointsPerCentimeter;
+  const marginX = (pageWidth - cardWidth * 2 - gapX) / 2;
+  const rowsHeight = cardHeight * 3 + gapY * 2;
   const marginY = (pageHeight - rowsHeight) / 2;
   const pageCount = Math.ceil(images.length / 6);
   const pageObjectNumbers = Array.from({ length: pageCount }, (_, index) => 3 + index * 8);
@@ -285,12 +289,13 @@ export function buildSixUpLetterPdf(images: Uint8Array[]) {
     const imageObjectNumbers = pageImages.map((_, index) => contentObject + 1 + index);
     const commands: string[] = [];
     pageImages.forEach((_, index) => {
-      const column = index % 3;
-      const row = Math.floor(index / 3);
+      const column = index % 2;
+      const row = Math.floor(index / 2);
       const x = marginX + column * (cardWidth + gapX);
       const top = marginY + row * (cardHeight + gapY);
       const y = pageHeight - top - cardHeight;
-      commands.push(`q ${cardWidth.toFixed(3)} 0 0 ${cardHeight.toFixed(3)} ${x.toFixed(3)} ${y.toFixed(3)} cm /Im${index} Do Q`);
+      // Rotate clockwise while preserving the requested physical 7.3 x 10.2 cm size.
+      commands.push(`q 0 -${cardHeight.toFixed(3)} ${cardWidth.toFixed(3)} 0 ${x.toFixed(3)} ${(y + cardHeight).toFixed(3)} cm /Im${index} Do Q`);
     });
     const content = textBytes(`<< /Length ${commands.join("\n").length} >>\nstream\n${commands.join("\n")}\nendstream`);
     objectBody(pageObject, textBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /ProcSet [/PDF /ImageC] /XObject << ${imageObjectNumbers.map((number, index) => `/Im${index} ${number} 0 R`).join(" ")} >> >> /Contents ${contentObject} 0 R >>`));
@@ -368,20 +373,29 @@ export async function generateCompetitorCardsPdfInBrowser({
   if (!context) throw new CompetitorCardGenerationError("El navegador no pudo crear los carnets.");
   const jpegImages: Uint8Array[] = [];
   participantInputs.forEach((participant, index) => {
-    context.clearRect(0, 0, COMPETITOR_CARD_WIDTH, COMPETITOR_CARD_HEIGHT);
-    context.drawImage(template, 0, 0, COMPETITOR_CARD_WIDTH, COMPETITOR_CARD_HEIGHT);
-    context.fillStyle = "#ffffff";
-    context.textAlign = "center";
-    context.textBaseline = "alphabetic";
-    drawFittedText(context, participant.name, COMPETITOR_CARD_BOXES.name);
-    drawFittedText(context, participant.team, COMPETITOR_CARD_BOXES.team);
-    jpegImages.push(dataUrlBytes(canvas.toDataURL("image/jpeg", 0.92)));
+    try {
+      context.clearRect(0, 0, COMPETITOR_CARD_WIDTH, COMPETITOR_CARD_HEIGHT);
+      context.drawImage(template, 0, 0, COMPETITOR_CARD_WIDTH, COMPETITOR_CARD_HEIGHT);
+      context.fillStyle = "#ffffff";
+      context.textAlign = "center";
+      context.textBaseline = "alphabetic";
+      drawFittedText(context, participant.name, COMPETITOR_CARD_BOXES.name);
+      drawFittedText(context, participant.team, COMPETITOR_CARD_BOXES.team);
+      jpegImages.push(dataUrlBytes(canvas.toDataURL("image/jpeg", 0.92)));
+    } catch (error) {
+      if (error instanceof VirtualCardValidationError) {
+        warnings.push(`Se omitió ${participant.name} de ${participant.team}: el texto no cabe en el carnet.`);
+      } else {
+        throw error;
+      }
+    }
     onProgress?.(index + 1, participantInputs.length);
   });
+  if (!jpegImages.length) throw new CompetitorCardGenerationError("Ningún nombre o equipo cabe en la plantilla de carnet.");
   return {
     blob: buildSixUpLetterPdf(jpegImages),
     fileName: `carnets-finalistas-${safePdfCategory(categoryLabel)}-2026.pdf`,
-    cardCount: participantInputs.length,
+    cardCount: jpegImages.length,
     warnings,
   };
 }
