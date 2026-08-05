@@ -13,6 +13,7 @@ export type RegistrationStatus =
   | "rechazada"
   | "pendiente_correccion";
 
+/** Canonical phases are online, presencial and cerrado; final remains a legacy alias. */
 export type CompetitivePhase = "online" | "presencial" | "final" | "cerrado";
 
 export type CompetitiveStatus =

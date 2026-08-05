@@ -49,7 +49,6 @@ export const COMPETITIVE_PHASE_OPTIONS: Array<{
 }> = [
   { value: "online", label: "Online" },
   { value: "presencial", label: "Presencial" },
-  { value: "final", label: "Final" },
   { value: "cerrado", label: "Cerrado" },
 ];
 
@@ -58,27 +57,23 @@ export const COMPETITIVE_STATUS_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "pendiente", label: "Pendiente" },
-  { value: "participando", label: "Participando" },
   { value: "clasificado", label: "Clasificado" },
   { value: "no_clasificado", label: "No clasificado" },
-  { value: "finalista", label: "Finalista" },
-  { value: "ganador", label: "Ganador" },
-  { value: "eliminado", label: "Descalificado" },
 ];
 
 export const COMPETITIVE_PHASE_LABELS: Record<CompetitivePhase, string> = {
   online: "Online",
   presencial: "Presencial",
-  final: "Final",
+  final: "Presencial",
   cerrado: "Cerrado",
 };
 
 export const COMPETITIVE_STATUS_LABELS: Record<CompetitiveStatus, string> = {
   pendiente: "Pendiente",
-  participando: "Participando",
+  participando: "Pendiente",
   clasificado: "Clasificado",
   no_clasificado: "No clasificado",
-  finalista: "Finalista",
-  ganador: "Ganador",
-  eliminado: "Descalificado",
+  finalista: "Clasificado",
+  ganador: "Clasificado",
+  eliminado: "No clasificado",
 };

@@ -5,15 +5,11 @@ import { CompetitivePhase, CompetitiveStatus } from "@/types/admin/registration"
 
 export const runtime = "nodejs";
 
-const PHASES = new Set<CompetitivePhase>(["online", "presencial", "final", "cerrado"]);
+const PHASES = new Set<CompetitivePhase>(["online", "presencial", "cerrado"]);
 const STATUSES = new Set<CompetitiveStatus>([
   "pendiente",
-  "participando",
   "clasificado",
   "no_clasificado",
-  "finalista",
-  "ganador",
-  "eliminado",
 ]);
 
 function validScore(value: unknown): value is number | null {

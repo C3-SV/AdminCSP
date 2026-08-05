@@ -178,15 +178,16 @@ function normalizeRegistrationStatus(value: unknown): RegistrationStatus {
 }
 
 function normalizeCompetitivePhase(value: unknown): CompetitivePhase | null {
-  return COMPETITIVE_PHASES.has(value as CompetitivePhase)
-    ? (value as CompetitivePhase)
-    : null;
+  if (!COMPETITIVE_PHASES.has(value as CompetitivePhase)) return null;
+  return value === "final" ? "presencial" : value as CompetitivePhase;
 }
 
 function normalizeCompetitiveStatus(value: unknown): CompetitiveStatus | null {
-  return COMPETITIVE_STATUSES.has(value as CompetitiveStatus)
-    ? (value as CompetitiveStatus)
-    : null;
+  if (!COMPETITIVE_STATUSES.has(value as CompetitiveStatus)) return null;
+  if (value === "participando") return "pendiente";
+  if (value === "finalista" || value === "ganador") return "clasificado";
+  if (value === "eliminado") return "no_clasificado";
+  return value as CompetitiveStatus;
 }
 
 export function mapRegistrationFromFirestore(
@@ -461,7 +462,7 @@ export async function normalizeRegistrationCompetitiveFields(
     payload.faseActual = "online";
   }
   if (!registration.estadoCompetitivo) {
-    payload.estadoCompetitivo = "participando";
+    payload.estadoCompetitivo = "pendiente";
   }
 
   if (!Object.keys(payload).length) {

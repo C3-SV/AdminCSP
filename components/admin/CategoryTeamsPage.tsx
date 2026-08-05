@@ -158,23 +158,21 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
         view.estadoCompetitivoMostrado === "clasificado"
       );
     }).length;
-    const finalistas = registrations.filter((registration) => {
+    const pendientes = registrations.filter((registration) => {
       const view = resolveRegistrationCompetitiveView(registration);
-      return view.estadoCompetitivoMostrado === "finalista";
+      return view.estadoCompetitivoMostrado === "pendiente";
     }).length;
-    const ganadoresOCerrados = registrations.filter((registration) => {
+    const noClasificados = registrations.filter((registration) => {
       const view = resolveRegistrationCompetitiveView(registration);
-      return (
-        view.estadoCompetitivoMostrado === "ganador" || view.faseActualMostrada === "cerrado"
-      );
+      return view.estadoCompetitivoMostrado === "no_clasificado";
     }).length;
 
     return [
       { label: `Total ${category}`, value: total },
       { label: "En fase online", value: online },
       { label: "Clasificados a presencial", value: clasificados },
-      { label: "Finalistas", value: finalistas },
-      { label: "Ganadores/cerrados", value: ganadoresOCerrados },
+      { label: "Pendientes", value: pendientes },
+      { label: "No clasificados", value: noClasificados },
     ];
   }, [category, registrations]);
 
@@ -244,7 +242,6 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
                 { value: "pendiente", label: "Pendiente/sin asignar" },
                 { value: "online", label: "Online" },
                 { value: "presencial", label: "Presencial" },
-                { value: "final", label: "Final" },
                 { value: "cerrado", label: "Cerrado" },
               ]}
               value={phaseFilter}
@@ -260,12 +257,8 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
               options={[
                 { value: "all", label: "Todos" },
                 { value: "pendiente", label: "Pendiente/sin asignar" },
-                { value: "participando", label: "Participando" },
                 { value: "clasificado", label: "Clasificado" },
                 { value: "no_clasificado", label: "No clasificado" },
-                { value: "finalista", label: "Finalista" },
-                { value: "ganador", label: "Ganador" },
-                { value: "eliminado", label: "Eliminado" },
               ]}
               value={competitiveStatus}
             />

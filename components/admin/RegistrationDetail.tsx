@@ -67,7 +67,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
   const [onsiteScore, setOnsiteScore] = useState(registration.puntajePresencial?.toString() ?? "");
   const [phase, setPhase] = useState<CompetitivePhase>(registration.faseActual ?? "online");
-  const [competitiveState, setCompetitiveState] = useState<CompetitiveStatus>(registration.estadoCompetitivo ?? "participando");
+  const [competitiveState, setCompetitiveState] = useState<CompetitiveStatus>(registration.estadoCompetitivo ?? "pendiente");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   const reloadHistory = async () => {
@@ -267,7 +267,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <div className="flex flex-wrap gap-2">
               <Button isLoading={isSavingResults} onClick={() => void handleSaveResults()} type="button">Guardar resultados</Button>
               <Button disabled={isSavingResults} onClick={() => void handleSaveResults({ phase: "presencial", status: "clasificado" })} type="button" variant="secondary">Clasificar a presencial</Button>
-              <Button disabled={isSavingResults} onClick={() => void handleSaveResults({ phase: "cerrado", status: "eliminado" })} type="button" variant="danger">Descalificar equipo</Button>
+              <Button disabled={isSavingResults} onClick={() => void handleSaveResults({ phase: "cerrado", status: "no_clasificado" })} type="button" variant="danger">Marcar como no clasificado</Button>
             </div>
           </Card>
 

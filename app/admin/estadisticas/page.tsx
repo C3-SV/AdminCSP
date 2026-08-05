@@ -68,18 +68,14 @@ export default function AdminEstadisticasPage() {
     ).length;
     const competition = registrations.map((registration) => ({ registration, view: resolveRegistrationCompetitiveView(registration) }));
     const phaseOnline = competition.filter(({ view }) => view.faseActualMostrada === "online").length;
-    const onlineParticipating = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "participando").length;
+    const pendingCompetitive = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "pendiente").length;
+    const notClassified = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "no_clasificado").length;
     const onlineScores = registrations.filter((item) => typeof item.puntajeOnline === "number");
     const progressedToOnsite = competition.filter(({ view }) =>
       view.faseActualMostrada === "presencial" ||
-      view.faseActualMostrada === "final" ||
-      view.estadoCompetitivoMostrado === "clasificado" ||
-      view.estadoCompetitivoMostrado === "finalista" ||
-      view.estadoCompetitivoMostrado === "ganador",
+      view.estadoCompetitivoMostrado === "clasificado",
     ).length;
     const onsiteScores = registrations.filter((item) => typeof item.puntajePresencial === "number");
-    const finalists = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "finalista").length;
-    const winners = competition.filter(({ view }) => view.estadoCompetitivoMostrado === "ganador").length;
     const byCategory = CATEGORIES.map((category) => {
       const teams = registrations.filter((item) => item.category === category);
       return {
@@ -89,8 +85,8 @@ export default function AdminEstadisticasPage() {
         emailSent: teams.filter((item) => item.emailStatus.virtualInstructions.status === "sent").length,
         online: teams.filter((item) => item.faseActual === "online").length,
         progressedToOnsite: teams.filter((item) =>
-          item.faseActual === "presencial" || item.faseActual === "final" ||
-          item.estadoCompetitivo === "clasificado" || item.estadoCompetitivo === "finalista" || item.estadoCompetitivo === "ganador",
+          item.faseActual === "presencial" ||
+          item.estadoCompetitivo === "clasificado",
         ).length,
       };
     });
@@ -110,14 +106,13 @@ export default function AdminEstadisticasPage() {
       emailFailed,
       approvedWithoutEmail,
       phaseOnline,
-      onlineParticipating,
+      pendingCompetitive,
+      notClassified,
       onlineScores: onlineScores.length,
       averageOnlineScore: average(onlineScores.map((item) => item.puntajeOnline)),
       progressedToOnsite,
       onsiteScores: onsiteScores.length,
       averageOnsiteScore: average(onsiteScores.map((item) => item.puntajePresencial)),
-      finalists,
-      winners,
       byCategory,
       topInstitutions: uniqueInstitutions(registrations),
     };
@@ -137,7 +132,8 @@ export default function AdminEstadisticasPage() {
             { label: "Correos virtuales enviados", value: totals.emailSent },
             { label: "Pendientes de correo", value: totals.approvedWithoutEmail },
             { label: "Avanzaron a presencial", value: totals.progressedToOnsite },
-            { label: "Ganadores", value: totals.winners },
+            { label: "Pendientes competitivos", value: totals.pendingCompetitive },
+            { label: "No clasificados", value: totals.notClassified },
           ]} />
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -160,7 +156,7 @@ export default function AdminEstadisticasPage() {
               <BarRow label="Fallos de envío" total={totals.aprobadas} value={totals.emailFailed} />
               <BarRow label="Pruebas Dry run" total={totals.aprobadas} value={totals.emailDryRun} />
               <BarRow label="Con fase virtual asignada" total={totals.aprobadas} value={totals.phaseOnline} />
-              <BarRow label="Participando online" total={totals.aprobadas} value={totals.onlineParticipating} />
+              <BarRow label="Estado competitivo pendiente" total={totals.aprobadas} value={totals.pendingCompetitive} />
               <BarRow label="Puntaje online cargado" total={totals.phaseOnline} value={totals.onlineScores} />
               <p className="text-sm text-csp-black/70">Promedio online: <strong>{totals.averageOnlineScore ?? "Sin datos"}</strong></p>
             </Card>
@@ -170,8 +166,7 @@ export default function AdminEstadisticasPage() {
               <p className="text-sm text-csp-black/70">Equipos que avanzan y resultados disponibles.</p>
               <BarRow label="Avanzaron a presencial" total={totals.total} value={totals.progressedToOnsite} />
               <BarRow label="Puntaje presencial cargado" total={totals.progressedToOnsite} value={totals.onsiteScores} />
-              <BarRow label="Finalistas" total={totals.progressedToOnsite} value={totals.finalists} />
-              <BarRow label="Ganadores" total={totals.progressedToOnsite} value={totals.winners} />
+              <BarRow label="No clasificados" total={totals.total} value={totals.notClassified} />
               <p className="text-sm text-csp-black/70">Promedio presencial: <strong>{totals.averageOnsiteScore ?? "Sin datos"}</strong></p>
             </Card>
           </div>
