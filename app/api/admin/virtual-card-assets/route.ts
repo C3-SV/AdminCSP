@@ -12,9 +12,10 @@ const onsiteAssetsDirectory = path.join(process.cwd(), "assets", "onsite-card");
 export async function GET(request: Request) {
   try {
     await requireAuthorizedAdmin(request);
-    const [template, font, colegios, universidades, ade, colegiosStory, universidadesStory, adeStory] = await Promise.all([
+    const [template, font, competitorTemplate, colegios, universidades, ade, colegiosStory, universidadesStory, adeStory] = await Promise.all([
       readFile(path.join(virtualAssetsDirectory, "participacion-virtual-template.png")),
       readFile(path.join(virtualAssetsDirectory, "Poppins-SemiBold.ttf")),
+      readFile(path.join(process.cwd(), "assets", "competitor-card", "competidor-template.png")),
       readFile(path.join(onsiteAssetsDirectory, "colegios-finalista.png")),
       readFile(path.join(onsiteAssetsDirectory, "universidades-finalista.png")),
       readFile(path.join(onsiteAssetsDirectory, "ade-finalista.png")),
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
       {
         template: template.toString("base64"),
         font: font.toString("base64"),
+        competitorTemplate: competitorTemplate.toString("base64"),
         onsiteTemplates: {
           colegios: colegios.toString("base64"),
           universidades: universidades.toString("base64"),

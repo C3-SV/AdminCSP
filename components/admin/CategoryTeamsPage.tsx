@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useAdminAuth } from "@/components/admin/auth/AdminAuthProvider";
 import {
   COMPETITIVE_PHASE_LABELS,
   REGISTRATION_STATUS_OPTIONS,
@@ -14,6 +15,7 @@ import { Select } from "@/components/ui/Select";
 import { Toast } from "@/components/ui/Toast";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { registrationDetailHref } from "@/lib/admin/registrationNavigation";
+import { CompetitorCardGenerationError, generateCompetitorCardsPdfInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import { getInstitutionDisplay } from "@/lib/admin/registrationPresentation";
 import {
   getRegistrationsByCategory,
@@ -60,10 +62,14 @@ function formatScore(value: number | null | undefined) {
 }
 
 export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPageProps) {
+  const { user } = useAdminAuth();
   const showResponsible = category === "colegios";
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [usingMockData, setUsingMockData] = useState(false);
+  const [isGeneratingCarnets, setIsGeneratingCarnets] = useState(false);
+  const [carnetProgress, setCarnetProgress] = useState(0);
   const [search, setSearch] = useState("");
   const [registrationStatus, setRegistrationStatus] = useState<"all" | RegistrationStatus>(
     "all",
@@ -82,6 +88,7 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
         return;
       }
       setRegistrations(response.registrations);
+      setUsingMockData(response.usingMockData);
       setMessage(response.message ?? "");
       setLoading(false);
     })();
@@ -125,6 +132,8 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
   }, [competitiveStatus, phaseFilter, registrationStatus, registrations, search]);
 
   const navigationIds = useMemo(() => filteredRegistrations.map((registration) => registration.id), [filteredRegistrations]);
+  const finalistTeamCount = useMemo(() => registrations.filter((registration) => registration.status === "aprobada" && registration.estadoCompetitivo === "clasificado").length, [registrations]);
+  const finalistParticipantCount = useMemo(() => registrations.filter((registration) => registration.status === "aprobada" && registration.estadoCompetitivo === "clasificado").reduce((total, registration) => total + registration.members.length, 0), [registrations]);
 
   const omegaUpUsers = useMemo(() => {
     const seen = new Set<string>();
@@ -189,6 +198,35 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
       });
     } catch {
       setToast({ message: "No se pudieron copiar los usuarios de OmegaUp.", variant: "error" });
+    }
+  };
+
+  const handleDownloadCarnets = async () => {
+    if (isGeneratingCarnets || !finalistParticipantCount) return;
+    setIsGeneratingCarnets(true);
+    setCarnetProgress(0);
+    try {
+      const result = await generateCompetitorCardsPdfInBrowser({
+        user,
+        registrations,
+        categoryLabel: title,
+        onProgress: (completed, total) => setCarnetProgress(Math.round((completed / total) * 100)),
+      });
+      const url = URL.createObjectURL(result.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.fileName;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setToast({
+        message: `${result.cardCount} carnets descargados.${result.warnings.length ? ` Avisos: ${result.warnings.join(" ")}` : ""}`,
+        variant: result.warnings.length ? "info" : "success",
+      });
+    } catch (error) {
+      setToast({ message: error instanceof CompetitorCardGenerationError || error instanceof Error ? error.message : "No fue posible generar los carnets.", variant: "error" });
+    } finally {
+      setIsGeneratingCarnets(false);
+      setCarnetProgress(0);
     }
   };
 
@@ -274,6 +312,17 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
             </p>
             <Button disabled={!omegaUpUsers.length} onClick={() => void handleCopyOmegaUpUsers()} type="button" variant="secondary">
               Copiar usuarios de OmegaUp
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-csp-soft bg-csp-white p-3">
+            <div>
+              <p className="text-sm font-semibold text-csp-primary">Carnets de competidores clasificados</p>
+              <p className="text-sm text-csp-black/70">{finalistTeamCount} equipo{finalistTeamCount === 1 ? "" : "s"} · {finalistParticipantCount} participante{finalistParticipantCount === 1 ? "" : "s"}</p>
+              {isGeneratingCarnets ? <p className="text-xs text-csp-black/65">Generando {carnetProgress}%…</p> : null}
+            </div>
+            <Button disabled={usingMockData || isGeneratingCarnets || !finalistParticipantCount} isLoading={isGeneratingCarnets} onClick={() => void handleDownloadCarnets()} type="button" variant="secondary">
+              Descargar carnets PDF
             </Button>
           </div>
 

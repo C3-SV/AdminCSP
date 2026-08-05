@@ -19,6 +19,7 @@ import {
   getOnsiteFinalistStoryFileName,
 } from "@/lib/cards/onsiteFinalistCardLayout";
 import type { KnownRegistrationCategory, RegistrationDocument } from "@/types/admin/registration";
+import { getParticipantShortName } from "@/lib/admin/namePresentation";
 
 type FirebaseSessionUser = { getIdToken: () => Promise<string> };
 
@@ -32,6 +33,7 @@ type CardAssets = {
   font: string;
   onsiteTemplates?: Partial<Record<KnownRegistrationCategory, string>>;
   onsiteStoryTemplates?: Partial<Record<KnownRegistrationCategory, string>>;
+  competitorTemplate?: string;
 };
 
 const FONT_FAMILY = "CSP Virtual Card Poppins";
@@ -54,7 +56,7 @@ async function loadAssets(user: FirebaseSessionUser | null) {
       if (!response.ok || !body.template || !body.font) {
         throw new Error(body.message || "No fue posible cargar los recursos de la tarjeta.");
       }
-      return { template: body.template, font: body.font, onsiteTemplates: body.onsiteTemplates, onsiteStoryTemplates: body.onsiteStoryTemplates };
+      return { template: body.template, font: body.font, competitorTemplate: body.competitorTemplate, onsiteTemplates: body.onsiteTemplates, onsiteStoryTemplates: body.onsiteStoryTemplates };
     })().catch((error) => {
       assetsPromise = undefined;
       throw error;
@@ -224,5 +226,162 @@ async function generateOnsiteCard({
   return {
     fileName: format === "story" ? getOnsiteFinalistStoryFileName(input.teamName) : getOnsiteFinalistFileName(input.teamName),
     content: await canvasPngBase64(canvas),
+  };
+}
+
+export class CompetitorCardGenerationError extends Error {}
+
+const COMPETITOR_CARD_WIDTH = 862;
+const COMPETITOR_CARD_HEIGHT = 1204;
+const COMPETITOR_CARD_BOXES = {
+  name: { x: 72, y: 505, width: 500, height: 165, maxFontSize: 46, minFontSize: 20, maxLines: 2 },
+  team: { x: 72, y: 748, width: 500, height: 100, maxFontSize: 40, minFontSize: 18, maxLines: 2 },
+} satisfies Record<string, VirtualCardTextBox>;
+
+type CompetitorPdfResult = { blob: Blob; fileName: string; cardCount: number; warnings: string[] };
+
+function dataUrlBytes(dataUrl: string) {
+  const encoded = dataUrl.split(",", 2)[1] ?? "";
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+function textBytes(value: string) {
+  return new TextEncoder().encode(value);
+}
+
+function joinBytes(parts: Uint8Array[]) {
+  const length = parts.reduce((total, part) => total + part.length, 0);
+  const result = new Uint8Array(length);
+  let offset = 0;
+  parts.forEach((part) => { result.set(part, offset); offset += part.length; });
+  return result;
+}
+
+/** Creates a letter portrait PDF with six proportional cards per page (3 columns x 2 rows). */
+export function buildSixUpLetterPdf(images: Uint8Array[]) {
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const marginX = 18;
+  const gapX = 8;
+  const gapY = 8;
+  const cardWidth = (pageWidth - marginX * 2 - gapX * 2) / 3;
+  const cardHeight = cardWidth * COMPETITOR_CARD_HEIGHT / COMPETITOR_CARD_WIDTH;
+  const rowsHeight = cardHeight * 2 + gapY;
+  const marginY = (pageHeight - rowsHeight) / 2;
+  const pageCount = Math.ceil(images.length / 6);
+  const pageObjectNumbers = Array.from({ length: pageCount }, (_, index) => 3 + index * 8);
+  const objects = new Map<number, Uint8Array>();
+  const objectBody = (number: number, body: Uint8Array) => objects.set(number, joinBytes([textBytes(`${number} 0 obj\n`), body, textBytes("\nendobj\n")]));
+  objectBody(1, textBytes("<< /Type /Catalog /Pages 2 0 R >>"));
+  objectBody(2, textBytes(`<< /Type /Pages /Kids [${pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")}] /Count ${pageCount} >>`));
+
+  for (let page = 0; page < pageCount; page += 1) {
+    const pageObject = pageObjectNumbers[page];
+    const contentObject = pageObject + 1;
+    const pageImages = images.slice(page * 6, page * 6 + 6);
+    const imageObjectNumbers = pageImages.map((_, index) => contentObject + 1 + index);
+    const commands: string[] = [];
+    pageImages.forEach((_, index) => {
+      const column = index % 3;
+      const row = Math.floor(index / 3);
+      const x = marginX + column * (cardWidth + gapX);
+      const top = marginY + row * (cardHeight + gapY);
+      const y = pageHeight - top - cardHeight;
+      commands.push(`q ${cardWidth.toFixed(3)} 0 0 ${cardHeight.toFixed(3)} ${x.toFixed(3)} ${y.toFixed(3)} cm /Im${index} Do Q`);
+    });
+    const content = textBytes(`<< /Length ${commands.join("\n").length} >>\nstream\n${commands.join("\n")}\nendstream`);
+    objectBody(pageObject, textBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /ProcSet [/PDF /ImageC] /XObject << ${imageObjectNumbers.map((number, index) => `/Im${index} ${number} 0 R`).join(" ")} >> >> /Contents ${contentObject} 0 R >>`));
+    objectBody(contentObject, content);
+    pageImages.forEach((image, index) => {
+      objectBody(imageObjectNumbers[index], joinBytes([
+        textBytes(`<< /Type /XObject /Subtype /Image /Width ${COMPETITOR_CARD_WIDTH} /Height ${COMPETITOR_CARD_HEIGHT} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.length} >>\nstream\n`),
+        image,
+        textBytes("\nendstream"),
+      ]));
+    });
+  }
+
+  const header = textBytes("%PDF-1.4\n");
+  const parts: Uint8Array[] = [header];
+  const offsets: number[] = [0];
+  let offset = header.length;
+  const maxObject = Math.max(...objects.keys());
+  for (let number = 1; number <= maxObject; number += 1) {
+    const object = objects.get(number);
+    if (!object) continue;
+    offsets[number] = offset;
+    parts.push(object);
+    offset += object.length;
+  }
+  const xrefOffset = offset;
+  const xref = [`xref`, `0 ${maxObject + 1}`, "0000000000 65535 f "];
+  for (let number = 1; number <= maxObject; number += 1) xref.push(`${String(offsets[number] ?? 0).padStart(10, "0")} 00000 n `);
+  xref.push(`trailer\n<< /Size ${maxObject + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+  parts.push(textBytes(`${xref.join("\n")}\n`));
+  return new Blob([joinBytes(parts)], { type: "application/pdf" });
+}
+
+function safePdfCategory(category: string) {
+  return category.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase() || "categoria";
+}
+
+export async function generateCompetitorCardsPdfInBrowser({
+  user,
+  registrations,
+  categoryLabel,
+  onProgress,
+}: {
+  user: FirebaseSessionUser | null;
+  registrations: RegistrationDocument[];
+  categoryLabel: string;
+  onProgress?: (completed: number, total: number) => void;
+}): Promise<CompetitorPdfResult> {
+  const finalistTeams = registrations
+    .filter((registration) => registration.status === "aprobada" && registration.estadoCompetitivo === "clasificado")
+    .sort((left, right) => left.teamName.localeCompare(right.teamName, "es", { sensitivity: "base" }));
+  const warnings: string[] = [];
+  const participantInputs: Array<{ name: string; team: string }> = [];
+  finalistTeams.forEach((team) => {
+    const teamName = team.teamName.replace(/\s+/g, " ").trim();
+    if (!teamName) { warnings.push("Se omitió un equipo clasificado sin nombre."); return; }
+    if (!team.members.length) { warnings.push(`Se omitió ${teamName}: no tiene integrantes.`); return; }
+    if (team.members.length !== 3) warnings.push(`${teamName} tiene ${team.members.length} integrantes; se incluyeron todos.`);
+    team.members.forEach((member, index) => {
+      const name = getParticipantShortName(member);
+      if (!name) { warnings.push(`Se omitió el integrante ${index + 1} de ${teamName}: no tiene nombre.`); return; }
+      participantInputs.push({ name, team: teamName });
+    });
+  });
+  if (!participantInputs.length) throw new CompetitorCardGenerationError("No hay participantes válidos de equipos aprobados y clasificados para generar el PDF.");
+  const assets = await loadAssets(user);
+  if (!assets.competitorTemplate) throw new CompetitorCardGenerationError("No se encontró la plantilla de carnet de competidor.");
+  await loadFont(assets.font);
+  await document.fonts.ready;
+  const template = await loadImage(asDataUrl("image/png", assets.competitorTemplate));
+  const canvas = document.createElement("canvas");
+  canvas.width = COMPETITOR_CARD_WIDTH;
+  canvas.height = COMPETITOR_CARD_HEIGHT;
+  const context = canvas.getContext("2d");
+  if (!context) throw new CompetitorCardGenerationError("El navegador no pudo crear los carnets.");
+  const jpegImages: Uint8Array[] = [];
+  participantInputs.forEach((participant, index) => {
+    context.clearRect(0, 0, COMPETITOR_CARD_WIDTH, COMPETITOR_CARD_HEIGHT);
+    context.drawImage(template, 0, 0, COMPETITOR_CARD_WIDTH, COMPETITOR_CARD_HEIGHT);
+    context.fillStyle = "#ffffff";
+    context.textAlign = "center";
+    context.textBaseline = "alphabetic";
+    drawFittedText(context, participant.name, COMPETITOR_CARD_BOXES.name);
+    drawFittedText(context, participant.team, COMPETITOR_CARD_BOXES.team);
+    jpegImages.push(dataUrlBytes(canvas.toDataURL("image/jpeg", 0.92)));
+    onProgress?.(index + 1, participantInputs.length);
+  });
+  return {
+    blob: buildSixUpLetterPdf(jpegImages),
+    fileName: `carnets-finalistas-${safePdfCategory(categoryLabel)}-2026.pdf`,
+    cardCount: participantInputs.length,
+    warnings,
   };
 }

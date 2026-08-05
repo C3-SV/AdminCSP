@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
     "/api/admin/virtual-card-assets": [
       "assets/virtual-card/participacion-virtual-template.png",
       "assets/virtual-card/Poppins-SemiBold.ttf",
+      "assets/competitor-card/competidor-template.png",
       "assets/onsite-card/colegios-finalista.png",
       "assets/onsite-card/universidades-finalista.png",
       "assets/onsite-card/ade-finalista.png",
