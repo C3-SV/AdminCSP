@@ -9,6 +9,7 @@ describe("carnets de competidores", () => {
     expect(getParticipantShortName({ firstName: "Christopher Alexander", lastName: "Marroquín Figueroa" })).toBe("Christopher Marroquín");
     expect(getParticipantShortName({ firstName: "Ana María", lastName: "López" })).toBe("Ana López");
     expect(getParticipantShortName({ firstName: "", lastName: "José Ángel" })).toBe("José Ángel");
+    expect(getParticipantShortName({ firstName: "JosÃ©", lastName: "MarroquÃ­n" })).toBe("José Marroquín");
   });
 
   it("mantiene la plantilla de 862x1204 y crea seis imágenes por página", async () => {

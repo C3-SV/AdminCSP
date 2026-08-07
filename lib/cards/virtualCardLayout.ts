@@ -25,8 +25,22 @@ export const VIRTUAL_CARD_TEXT_BOXES = {
 
 export class VirtualCardValidationError extends Error {}
 
+/**
+ * Repairs the common UTF-8-as-Latin-1 corruption found in legacy form data
+ * (for example, "MarroquÃ­n" -> "Marroquín") without changing Firestore.
+ */
+export function repairDisplayTextEncoding(value: string) {
+  if (!/[ÃÂ][\u0080-\u00bf]/.test(value)) return value.normalize("NFC");
+  try {
+    const bytes = Uint8Array.from(value, (character) => character.charCodeAt(0));
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes).normalize("NFC");
+  } catch {
+    return value.normalize("NFC");
+  }
+}
+
 export function compactVirtualCardText(value: string) {
-  return value.replace(/\s+/g, " ").trim();
+  return repairDisplayTextEncoding(value).replace(/\s+/g, " ").trim();
 }
 
 function fullName(firstName: string, lastName: string) {
@@ -35,7 +49,7 @@ function fullName(firstName: string, lastName: string) {
 
 export function getVirtualCardInput(registration: RegistrationDocument) {
   const teamName = compactVirtualCardText(registration.teamName);
-  const institution = getInstitutionDisplay(registration);
+  const institution = compactVirtualCardText(getInstitutionDisplay(registration));
   const members = registration.members
     .map((member) => fullName(member.firstName, member.lastName))
     .filter(Boolean)

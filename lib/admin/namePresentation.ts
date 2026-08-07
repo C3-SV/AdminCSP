@@ -1,7 +1,8 @@
 import type { RegistrationDocumentMember } from "@/types/admin/registration";
+import { compactVirtualCardText } from "@/lib/cards/virtualCardLayout";
 
 function clean(value: string | undefined) {
-  return (value ?? "").replace(/\s+/g, " ").trim();
+  return compactVirtualCardText(value ?? "");
 }
 
 /** Consistent short name for cards: first given name + first surname, preserving accents. */

@@ -351,7 +351,7 @@ export async function generateCompetitorCardsPdfInBrowser({
   const warnings: string[] = [];
   const participantInputs: Array<{ name: string; team: string }> = [];
   finalistTeams.forEach((team) => {
-    const teamName = team.teamName.replace(/\s+/g, " ").trim();
+    const teamName = compactVirtualCardText(team.teamName);
     if (!teamName) { warnings.push("Se omitió un equipo clasificado sin nombre."); return; }
     if (!team.members.length) { warnings.push(`Se omitió ${teamName}: no tiene integrantes.`); return; }
     if (team.members.length !== 3) warnings.push(`${teamName} tiene ${team.members.length} integrantes; se incluyeron todos.`);
