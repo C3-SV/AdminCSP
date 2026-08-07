@@ -50,7 +50,7 @@ Confirmen su asistencia
 
 Para ayudarnos a preparar la jornada, necesitamos que completen el siguiente formulario y nos confirmen la asistencia de su equipo.
 
-También pueden acompañarlos padres de familia, familiares, amigos o docentes. Cada equipo podrá registrar un máximo de 2 acompañantes.
+También pueden acompañarlos padres de familia, familiares, amigos o docentes. Cada integrante del equipo podrá registrar un máximo de 2 acompañantes.
 
 Les pedimos que indiquen en el formulario cuántas personas los acompañarán y sus datos. Esta confirmación es importante para que podamos organizar adecuadamente los espacios y la logística del evento.
 
@@ -140,7 +140,7 @@ Copa Salvadoreña de Programación 2026`;
     }
     if (part === "[CONFIRMAR ASISTENCIA]\n[LINK DEL FORMULARIO]") {
       return isSchool
-        ? `<div style="margin:22px 0;padding:20px;background:#eefbfa;border:1px solid #8adbd3;border-radius:12px;text-align:center"><p style="margin:0 0 14px;font-weight:bold;color:#33247c">Confirmen la asistencia de su equipo</p><a href="${SCHOOL_ATTENDANCE_FORM_URL}" style="display:inline-block;background:#17b6a7;color:#ffffff;text-decoration:none;padding:13px 24px;border-radius:8px;font-weight:bold">Confirmar asistencia</a><p style="margin:12px 0 0;font-size:13px;color:#5b5682">Cada equipo puede registrar hasta 2 acompañantes.</p></div>`
+        ? `<div style="margin:22px 0;padding:20px;background:#eefbfa;border:1px solid #8adbd3;border-radius:12px;text-align:center"><p style="margin:0 0 14px;font-weight:bold;color:#33247c">Confirmen la asistencia de su equipo</p><a href="${SCHOOL_ATTENDANCE_FORM_URL}" style="display:inline-block;background:#17b6a7;color:#ffffff;text-decoration:none;padding:13px 24px;border-radius:8px;font-weight:bold">Confirmar asistencia</a><p style="margin:12px 0 0;font-size:13px;color:#5b5682">Cada integrante del equipo puede registrar hasta 2 acompañantes.</p></div>`
         : "";
     }
     if (part.startsWith("Categoría:")) {
