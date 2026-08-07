@@ -30,6 +30,15 @@ describe("tarjetas y correo de clasificación presencial", () => {
     expect(content.textContent).toContain(ONSITE_FINALIST_CARD_CONFIG[category].categoryLabel);
   });
 
+  it("muestra el CTA de asistencia sólo para colegios y conserva el estilo destacado", () => {
+    const colegios = buildOnsiteClassificationContent(team("colegios"));
+    const universidades = buildOnsiteClassificationContent(team("universidades"));
+    expect(colegios.htmlContent).toContain("https://forms.gle/92Z6q2gLSaN2aq9u9");
+    expect(colegios.htmlContent).toContain("Confirmar asistencia");
+    expect(colegios.htmlContent).toContain("border-left:5px solid #17b6a7");
+    expect(universidades.htmlContent).not.toContain("92Z6q2gLSaN2aq9u9");
+  });
+
   it.each([
     ["colegios", "colegios-finalista-story.png"],
     ["universidades", "universidades-finalista-story.png"],

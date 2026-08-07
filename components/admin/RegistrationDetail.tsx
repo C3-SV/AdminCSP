@@ -20,6 +20,7 @@ import {
   getRegistrationEmailHistory,
   saveRegistrationStatus,
   saveRegistrationResults,
+  sendNotClassified,
   sendOnsiteClassification,
   sendVirtualInstructions,
 } from "@/services/admin/adminMutations";
@@ -61,8 +62,10 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [isSavingResults, setIsSavingResults] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSendingOnsite, setIsSendingOnsite] = useState(false);
+  const [isSendingNotClassified, setIsSendingNotClassified] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOnsiteConfirmation, setShowOnsiteConfirmation] = useState(false);
+  const [showNotClassifiedConfirmation, setShowNotClassifiedConfirmation] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<"live" | "dry_run">("dry_run");
   const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
   const [onsiteScore, setOnsiteScore] = useState(registration.puntajePresencial?.toString() ?? "");
@@ -123,8 +126,10 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
 
   const virtualState = current.emailStatus.virtualInstructions;
   const onsiteState = current.emailStatus.classifiedToOnsite;
+  const notClassifiedState = current.emailStatus.notClassified;
   const canSend = current.status === "aprobada" && !usingMockData;
   const canSendOnsite = current.estadoCompetitivo === "clasificado" && !usingMockData;
+  const canSendNotClassified = current.estadoCompetitivo === "no_clasificado" && !usingMockData;
 
   const handleSave = async () => {
     if (usingMockData) {
@@ -228,6 +233,21 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
     }
   };
 
+  const handleSendNotClassified = async () => {
+    setIsSendingNotClassified(true);
+    try {
+      const result = await sendNotClassified({ user, id: current.id, operationId: crypto.randomUUID() });
+      setCurrent(result.registration);
+      if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
+      setShowNotClassifiedConfirmation(false);
+      setToast({ message: "Correo de no clasificación procesado. Revisa el historial para confirmar el estado.", variant: "success" });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : "No fue posible enviar el correo de no clasificación.", variant: "error" });
+    } finally {
+      setIsSendingNotClassified(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {toast ? <Toast message={toast.message} variant={toast.variant} /> : null}
@@ -316,7 +336,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <h3 className="font-display text-lg font-semibold text-csp-primary">Correos</h3>
             <p><strong>Indicaciones fase virtual:</strong> {statusLabel(virtualState.status)}{virtualState.lastAttemptAt ? ` · ${formatDate(virtualState.lastAttemptAt)}` : ""}</p>
             <p><strong>Clasificación presencial:</strong> {statusLabel(onsiteState.status)}{onsiteState.lastAttemptAt ? ` · ${formatDate(onsiteState.lastAttemptAt)}` : ""}</p>
-            <p><strong>No clasificado:</strong> Próximamente</p>
+            <p><strong>No clasificación:</strong> {statusLabel(notClassifiedState.status)}{notClassifiedState.lastAttemptAt ? ` · ${formatDate(notClassifiedState.lastAttemptAt)}` : ""}</p>
           </Card>
 
           <Card>
@@ -328,7 +348,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <ul className="mt-3 space-y-2 text-sm">
                 {logs.map((log) => (
                   <li className="rounded-md border border-csp-soft p-3" key={log.id}>
-                    <p className="font-semibold text-csp-primary">{log.emailType === "classified_to_onsite" ? "Clasificación presencial" : "Indicaciones fase virtual"} · {statusLabel(log.status)}</p>
+                    <p className="font-semibold text-csp-primary">{log.emailType === "classified_to_onsite" ? "Clasificación presencial" : log.emailType === "not_classified" ? "No clasificación" : "Indicaciones fase virtual"} · {statusLabel(log.status)}</p>
                     <p>{formatDate(log.createdAt)} · {log.to}{log.cc.length ? ` · CC: ${log.cc.join(", ")}` : ""}</p>
                     {log.attachment ? <p className="text-csp-black/70">Adjunto: {log.attachment.name}</p> : null}
                     {log.errorMessage ? <p className="text-csp-danger">Error: {log.errorMessage}</p> : null}
@@ -350,6 +370,10 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               {onsiteState.lastSentAt ? "Reenviar clasificación presencial" : "Enviar clasificación presencial"}
             </Button>
             {!canSendOnsite ? <p className="text-sm text-csp-black/70">Disponible sólo para equipos clasificados.</p> : null}
+            <Button disabled={!canSendNotClassified} onClick={() => setShowNotClassifiedConfirmation(true)} type="button" variant="danger">
+              {notClassifiedState.lastSentAt ? "Reenviar correo de no clasificación" : "Enviar correo de no clasificación"}
+            </Button>
+            {!canSendNotClassified ? <p className="text-sm text-csp-black/70">Disponible sólo para equipos no clasificados.</p> : null}
             <Button onClick={() => void handleCopyEmails()} type="button" variant="secondary">Copiar correos</Button>
           </Card>
 
@@ -395,6 +419,25 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <div className="flex justify-end gap-2 pt-2">
               <Button disabled={isSendingOnsite} onClick={() => setShowOnsiteConfirmation(false)} type="button" variant="secondary">Cancelar</Button>
               <Button isLoading={isSendingOnsite} onClick={() => void handleSendOnsite()} type="button">Confirmar envío</Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
+      {showNotClassifiedConfirmation ? (
+        <div aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-csp-black/50 p-4" role="dialog">
+          <Card className="w-full max-w-lg space-y-3 shadow-xl">
+            <h2 className="font-display text-xl font-semibold text-csp-primary">Confirmar correo de no clasificación</h2>
+            <p className="text-sm"><strong>Equipo:</strong> {current.teamName}</p>
+            <p className="text-sm"><strong>Categoría:</strong> {REGISTRATION_CATEGORY_LABELS[current.category]}</p>
+            <p className="text-sm"><strong>Representando a:</strong> {getInstitutionDisplay(current)}</p>
+            <p className="text-sm"><strong>Integrantes:</strong> {current.members.map((member) => memberName(member.firstName, member.lastName)).join(", ")}</p>
+            <p className="text-sm"><strong>Para:</strong> {primaryRecipient || "Sin correo"}</p>
+            <p className="text-sm"><strong>CC:</strong> {copiedRecipients.join(", ") || "-"}</p>
+            <p className="text-sm"><strong>Modo:</strong> {deliveryMode === "live" ? "Envío real por Brevo" : "Dry run: Brevo valida sin entregar el correo"}</p>
+            {notClassifiedState.lastSentAt ? <p className="rounded-md bg-csp-warning/10 p-2 text-sm">Ya se envió exitosamente el {formatDate(notClassifiedState.lastSentAt)}. Esta acción generará un reenvío.</p> : null}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button disabled={isSendingNotClassified} onClick={() => setShowNotClassifiedConfirmation(false)} type="button" variant="secondary">Cancelar</Button>
+              <Button isLoading={isSendingNotClassified} onClick={() => void handleSendNotClassified()} type="button" variant="danger">Confirmar envío</Button>
             </div>
           </Card>
         </div>

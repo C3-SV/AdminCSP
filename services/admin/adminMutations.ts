@@ -178,3 +178,13 @@ export async function sendOnsiteClassification({
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };
 }
+
+export async function sendNotClassified({ user, id, operationId }: { user: FirebaseSessionUser | null; id: string; operationId: string }) {
+  const body = await authorizedRequest(
+    user,
+    `/api/admin/registrations/${encodeURIComponent(id)}/emails/not-classified`,
+    { method: "POST", body: JSON.stringify({ operationId }) },
+  );
+  if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
+  return { registration: body.registration, log: body.log };
+}

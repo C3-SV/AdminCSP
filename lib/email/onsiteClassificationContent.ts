@@ -1,6 +1,8 @@
 import { ONSITE_FINALIST_CARD_CONFIG } from "@/lib/cards/onsiteFinalistCardLayout";
 import type { RegistrationDocument } from "@/types/admin/registration";
 
+const SCHOOL_ATTENDANCE_FORM_URL = "https://forms.gle/92Z6q2gLSaN2aq9u9";
+
 export function getOnsiteClassificationSubject(teamName: string) {
   // Se conserva el asunto que ya utiliza el flujo actual.
   return `${teamName} · ¡Clasificaron a la final presencial de la Copa Salvadoreña de Programación 2026!`;
@@ -128,16 +130,38 @@ Disfruten este resultado, pero sigan preparándose: todavía queda competencia p
 Equipo C3
 Copa Salvadoreña de Programación 2026`;
 
+  const outputTextContent = isSchool
+    ? textContent.replace("[CONFIRMAR ASISTENCIA]\n[LINK DEL FORMULARIO]", `Confirmar asistencia: ${SCHOOL_ATTENDANCE_FORM_URL}`)
+    : textContent;
   const textParagraphs = textContent.split(/\n\n/);
   const htmlBody = textParagraphs.map((part) => {
-    if (["Confirmen su asistencia", "Compartan que van a la final", "Esto no termina aquí", "Compartan su clasificación"].includes(part)) return sectionHeading(part);
-    if (part === "[CONFIRMAR ASISTENCIA]\n[LINK DEL FORMULARIO]") return `<div style="margin:20px 0;padding:16px;background:#f4f5ff;border-left:4px solid #17b6a7;font-weight:bold;white-space:pre-line">[CONFIRMAR ASISTENCIA]<br />[LINK DEL FORMULARIO]</div>`;
+    if (["Confirmen su asistencia", "Compartan que van a la final", "Esto no termina aquí", "Compartan su clasificación"].includes(part)) {
+      return sectionHeading(part);
+    }
+    if (part === "[CONFIRMAR ASISTENCIA]\n[LINK DEL FORMULARIO]") {
+      return isSchool
+        ? `<div style="margin:22px 0;padding:20px;background:#eefbfa;border:1px solid #8adbd3;border-radius:12px;text-align:center"><p style="margin:0 0 14px;font-weight:bold;color:#33247c">Confirmen la asistencia de su equipo</p><a href="${SCHOOL_ATTENDANCE_FORM_URL}" style="display:inline-block;background:#17b6a7;color:#ffffff;text-decoration:none;padding:13px 24px;border-radius:8px;font-weight:bold">Confirmar asistencia</a><p style="margin:12px 0 0;font-size:13px;color:#5b5682">Cada equipo puede registrar hasta 2 acompañantes.</p></div>`
+        : "";
+    }
+    if (part.startsWith("Categoría:")) {
+      const lines = part.split("\n");
+      return `<div style="margin:22px 0;padding:18px 20px;background:#f4f5ff;border-left:5px solid #17b6a7;border-radius:8px">${lines.map((line) => {
+        const [label, ...rest] = line.split(":");
+        return `<p style="margin:0 0 6px"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(rest.join(":").trim())}</p>`;
+      }).join("")}</div>`;
+    }
+    if (part === "Y ahora sí: ¡la final es este sábado!" || part === "Ahora comienza una nueva etapa.") {
+      return `<div style="margin:22px 0;padding:14px 18px;background:#33247c;color:#ffffff;border-radius:8px;font-weight:bold;text-align:center">${escapeHtml(part)}</div>`;
+    }
+    if (part.startsWith("Adjuntamos dos tarjetas personalizadas")) {
+      return `<div style="margin:22px 0;padding:18px 20px;background:#f4f5ff;border-radius:8px"><p style="margin:0 0 8px;font-weight:bold;color:#33247c">${escapeHtml(part.split("\n")[0])}</p>${part.split("\n").slice(1).map((line) => `<p style="margin:4px 0">${escapeHtml(line)}</p>`).join("")}</div>`;
+    }
     return paragraph(part);
   }).join("");
 
   return {
     subject: getOnsiteClassificationSubject(teamName),
-    textContent,
+    textContent: outputTextContent,
     htmlContent: `<!doctype html><html><body style="margin:0;background:#f4f5ff;font-family:Arial,sans-serif;color:#29225d"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:32px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden"><tr><td style="background:#33247c;padding:30px;color:#ffffff"><p style="margin:0;font-size:14px;font-weight:bold;color:#72ded2">C3 · COPA SALVADOREÑA DE PROGRAMACIÓN 2026</p><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2">¡Clasificaron a la final presencial!</h1></td></tr><tr><td style="padding:30px;font-size:16px;line-height:1.6">${htmlBody}</td></tr></table></td></tr></table></body></html>`,
   };
 }
