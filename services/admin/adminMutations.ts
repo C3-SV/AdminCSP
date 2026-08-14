@@ -3,6 +3,7 @@ import type { EmailLog } from "@/types/admin/email";
 import type {
   CompetitivePhase,
   CompetitiveStatus,
+  LaboratoryAssignment,
   RegistrationDocument,
   RegistrationStatus,
 } from "@/types/admin/registration";
@@ -107,6 +108,22 @@ export function saveRegistrationResults({
     method: "PATCH",
     body: JSON.stringify({ puntajeOnline, puntajePresencial, faseActual, estadoCompetitivo }),
   });
+}
+
+export function saveLaboratoryAssignment({ user, id, laboratorioAsignado }: { user: FirebaseSessionUser | null; id: string; laboratorioAsignado: LaboratoryAssignment | null }) {
+  return requestAdminMutation(user, `/api/admin/registrations/${encodeURIComponent(id)}/laboratory`, {
+    method: "PATCH",
+    body: JSON.stringify({ laboratorioAsignado }),
+  });
+}
+
+export async function sendFinalInstructions({ user, id, operationId }: { user: FirebaseSessionUser | null; id: string; operationId: string }) {
+  const body = await authorizedRequest(user, `/api/admin/registrations/${encodeURIComponent(id)}/emails/final-instructions`, {
+    method: "POST",
+    body: JSON.stringify({ operationId }),
+  });
+  if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
+  return { registration: body.registration, log: body.log };
 }
 
 export async function getRegistrationEmailHistory({

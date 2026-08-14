@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
+import { LABORATORY_OPTIONS } from "@/constants/admin";
 import {
   resolveRegistrationCompetitiveView,
   type DisplayCompetitivePhase,
@@ -26,6 +27,7 @@ import {
   RegistrationDocumentMember,
   RegistrationStatus,
   Responsible,
+  LaboratoryAssignment,
   UploadedFileMetadata,
 } from "@/types/admin/registration";
 import {
@@ -145,6 +147,7 @@ function mapEmailStatus(value: unknown): RegistrationEmailStatus {
     virtualInstructions: mapEmailStatusEntry(item.virtualInstructions),
     classifiedToOnsite: mapEmailStatusEntry(item.classifiedToOnsite),
     notClassified: mapEmailStatusEntry(item.notClassified),
+    finalInstructions: mapEmailStatusEntry(item.finalInstructions),
   };
 }
 
@@ -180,6 +183,14 @@ function normalizeRegistrationStatus(value: unknown): RegistrationStatus {
 function normalizeCompetitivePhase(value: unknown): CompetitivePhase | null {
   if (!COMPETITIVE_PHASES.has(value as CompetitivePhase)) return null;
   return value === "final" ? "presencial" : value as CompetitivePhase;
+}
+
+const LABORATORIES = new Set<LaboratoryAssignment>(LABORATORY_OPTIONS.map(({ value }) => value));
+
+function mapLaboratory(value: unknown): LaboratoryAssignment | null {
+  return typeof value === "string" && LABORATORIES.has(value as LaboratoryAssignment)
+    ? value as LaboratoryAssignment
+    : null;
 }
 
 function normalizeCompetitiveStatus(value: unknown): CompetitiveStatus | null {
@@ -276,6 +287,7 @@ export function mapRegistrationFromFirestore(
     posicionFinal: toNullableNumber(data.posicionFinal),
     fechaPresencial: toNullableString(data.fechaPresencial),
     sedePresencial: toNullableString(data.sedePresencial),
+    laboratorioAsignado: mapLaboratory(data.laboratorioAsignado),
     adminNotes: typeof data.adminNotes === "string" ? data.adminNotes : "",
     createdAt: toISODate(data.createdAt),
     updatedAt: toISODate(data.updatedAt),

@@ -13,12 +13,14 @@ export type RegistrationEmailStatus = {
   virtualInstructions: EmailStatusEntry;
   classifiedToOnsite: EmailStatusEntry;
   notClassified: EmailStatusEntry;
+  finalInstructions: EmailStatusEntry;
 };
 
 export type EmailLogType =
   | "virtual_instructions"
   | "classified_to_onsite"
   | "not_classified"
+  | "final_instructions"
   | "finalist"
   | "winner";
 
@@ -54,4 +56,5 @@ export const EMPTY_EMAIL_STATUS: RegistrationEmailStatus = {
   virtualInstructions: { status: "not_sent" },
   classifiedToOnsite: { status: "not_sent" },
   notClassified: { status: "not_sent" },
+  finalInstructions: { status: "not_sent" },
 };

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { FieldValue } from "firebase-admin/firestore";
+import { LABORATORY_OPTIONS } from "@/constants/admin";
 import { COMPETITIVE_ACTIONS, CompetitiveActionKey } from "@/lib/admin/competitiveActions";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { mapRegistrationFromFirestore } from "@/services/admin/registrations";
@@ -9,6 +10,7 @@ import {
   CompetitiveStatus,
   RegistrationDocument,
   RegistrationStatus,
+  LaboratoryAssignment,
 } from "@/types/admin/registration";
 
 const REGISTRATIONS_COLLECTION = "registrations";
@@ -102,5 +104,22 @@ export async function updateRegistrationResultsAsAdmin({
     estadoCompetitivo,
     ...auditPayload(updatedBy),
   });
+  return readRegistration(id);
+}
+
+export async function updateLaboratoryAssignmentAsAdmin({ id, laboratorioAsignado, updatedBy }: {
+  id: string;
+  laboratorioAsignado: LaboratoryAssignment | null;
+  updatedBy: string;
+}) {
+  if (laboratorioAsignado !== null && !LABORATORY_OPTIONS.some(({ value }) => value === laboratorioAsignado)) {
+    throw new AdminMutationError("El laboratorio seleccionado no es válido.", 422);
+  }
+  const ref = registrationRef(id);
+  const registration = toRegistration(await ref.get());
+  if (registration.estadoCompetitivo !== "clasificado") {
+    throw new AdminMutationError("Sólo los equipos clasificados pueden tener un laboratorio asignado.", 422);
+  }
+  await ref.update({ laboratorioAsignado, ...auditPayload(updatedBy) });
   return readRegistration(id);
 }

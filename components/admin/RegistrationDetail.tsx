@@ -11,6 +11,7 @@ import { Toast } from "@/components/ui/Toast";
 import {
   COMPETITIVE_PHASE_OPTIONS,
   COMPETITIVE_STATUS_OPTIONS,
+  LABORATORY_OPTIONS,
   REGISTRATION_CATEGORY_LABELS,
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
@@ -21,13 +22,16 @@ import {
   saveRegistrationStatus,
   saveRegistrationResults,
   sendNotClassified,
+  sendFinalInstructions,
   sendOnsiteClassification,
+  saveLaboratoryAssignment,
   sendVirtualInstructions,
 } from "@/services/admin/adminMutations";
 import type { EmailLog } from "@/types/admin/email";
 import type {
   CompetitivePhase,
   CompetitiveStatus,
+  LaboratoryAssignment,
   RegistrationDocument,
   RegistrationStatus,
 } from "@/types/admin/registration";
@@ -60,17 +64,21 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingResults, setIsSavingResults] = useState(false);
+  const [isSavingLaboratory, setIsSavingLaboratory] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSendingOnsite, setIsSendingOnsite] = useState(false);
   const [isSendingNotClassified, setIsSendingNotClassified] = useState(false);
+  const [isSendingFinalInstructions, setIsSendingFinalInstructions] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOnsiteConfirmation, setShowOnsiteConfirmation] = useState(false);
   const [showNotClassifiedConfirmation, setShowNotClassifiedConfirmation] = useState(false);
+  const [showFinalInstructionsConfirmation, setShowFinalInstructionsConfirmation] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<"live" | "dry_run">("dry_run");
   const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
   const [onsiteScore, setOnsiteScore] = useState(registration.puntajePresencial?.toString() ?? "");
   const [phase, setPhase] = useState<CompetitivePhase>(registration.faseActual ?? "online");
   const [competitiveState, setCompetitiveState] = useState<CompetitiveStatus>(registration.estadoCompetitivo ?? "pendiente");
+  const [laboratory, setLaboratory] = useState<LaboratoryAssignment | "">(registration.laboratorioAsignado ?? "");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
 
   const reloadHistory = async () => {
@@ -127,9 +135,12 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const virtualState = current.emailStatus.virtualInstructions;
   const onsiteState = current.emailStatus.classifiedToOnsite;
   const notClassifiedState = current.emailStatus.notClassified;
+  const finalInstructionsState = current.emailStatus.finalInstructions;
   const canSend = current.status === "aprobada" && !usingMockData;
   const canSendOnsite = current.estadoCompetitivo === "clasificado" && !usingMockData;
   const canSendNotClassified = current.estadoCompetitivo === "no_clasificado" && !usingMockData;
+  const canAssignLaboratory = current.estadoCompetitivo === "clasificado" && !usingMockData;
+  const canSendFinalInstructions = canAssignLaboratory && Boolean(current.laboratorioAsignado);
 
   const handleSave = async () => {
     if (usingMockData) {
@@ -198,6 +209,21 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
     }
   };
 
+  const handleSaveLaboratory = async () => {
+    if (!canAssignLaboratory) return;
+    setIsSavingLaboratory(true);
+    try {
+      const updated = await saveLaboratoryAssignment({ user, id: current.id, laboratorioAsignado: laboratory || null });
+      setCurrent(updated);
+      setLaboratory(updated.laboratorioAsignado ?? "");
+      setToast({ message: "Laboratorio asignado correctamente.", variant: "success" });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : "No fue posible guardar el laboratorio.", variant: "error" });
+    } finally {
+      setIsSavingLaboratory(false);
+    }
+  };
+
   const handleSend = async () => {
     setIsSending(true);
     try {
@@ -248,6 +274,21 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
     }
   };
 
+  const handleSendFinalInstructions = async () => {
+    setIsSendingFinalInstructions(true);
+    try {
+      const result = await sendFinalInstructions({ user, id: current.id, operationId: crypto.randomUUID() });
+      setCurrent(result.registration);
+      if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
+      setShowFinalInstructionsConfirmation(false);
+      setToast({ message: "Indicaciones finales procesadas. Revisa el historial para confirmar el estado.", variant: "success" });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : "No fue posible enviar las indicaciones finales.", variant: "error" });
+    } finally {
+      setIsSendingFinalInstructions(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {toast ? <Toast message={toast.message} variant={toast.variant} /> : null}
@@ -284,6 +325,12 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <Select id="competitive-phase" label="Fase actual" onChange={(event) => setPhase(event.target.value as CompetitivePhase)} options={COMPETITIVE_PHASE_OPTIONS} value={phase} />
               <Select id="competitive-status" label="Estado competitivo" onChange={(event) => setCompetitiveState(event.target.value as CompetitiveStatus)} options={COMPETITIVE_STATUS_OPTIONS} value={competitiveState} />
             </div>
+            {current.estadoCompetitivo === "clasificado" ? (
+              <div className="rounded-md border border-csp-soft bg-csp-soft/20 p-3">
+                <Select id="laboratorio-asignado" label="Laboratorio asignado" onChange={(event) => setLaboratory(event.target.value as LaboratoryAssignment)} options={[...LABORATORY_OPTIONS]} placeholder="Selecciona un laboratorio" value={laboratory} />
+                <Button disabled={!canAssignLaboratory} isLoading={isSavingLaboratory} onClick={() => void handleSaveLaboratory()} type="button" variant="secondary">Guardar laboratorio</Button>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button isLoading={isSavingResults} onClick={() => void handleSaveResults()} type="button">Guardar resultados</Button>
               <Button disabled={isSavingResults} onClick={() => void handleSaveResults({ phase: "presencial", status: "clasificado" })} type="button" variant="secondary">Clasificar a presencial</Button>
@@ -337,6 +384,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <p><strong>Indicaciones fase virtual:</strong> {statusLabel(virtualState.status)}{virtualState.lastAttemptAt ? ` · ${formatDate(virtualState.lastAttemptAt)}` : ""}</p>
             <p><strong>Clasificación presencial:</strong> {statusLabel(onsiteState.status)}{onsiteState.lastAttemptAt ? ` · ${formatDate(onsiteState.lastAttemptAt)}` : ""}</p>
             <p><strong>No clasificación:</strong> {statusLabel(notClassifiedState.status)}{notClassifiedState.lastAttemptAt ? ` · ${formatDate(notClassifiedState.lastAttemptAt)}` : ""}</p>
+            <p><strong>Indicaciones finales:</strong> {statusLabel(finalInstructionsState.status)}{finalInstructionsState.lastAttemptAt ? ` · ${formatDate(finalInstructionsState.lastAttemptAt)}` : ""}</p>
           </Card>
 
           <Card>
@@ -348,7 +396,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <ul className="mt-3 space-y-2 text-sm">
                 {logs.map((log) => (
                   <li className="rounded-md border border-csp-soft p-3" key={log.id}>
-                    <p className="font-semibold text-csp-primary">{log.emailType === "classified_to_onsite" ? "Clasificación presencial" : log.emailType === "not_classified" ? "No clasificación" : "Indicaciones fase virtual"} · {statusLabel(log.status)}</p>
+                    <p className="font-semibold text-csp-primary">{log.emailType === "classified_to_onsite" ? "Clasificación presencial" : log.emailType === "not_classified" ? "No clasificación" : log.emailType === "final_instructions" ? "Indicaciones finales" : "Indicaciones fase virtual"} · {statusLabel(log.status)}</p>
                     <p>{formatDate(log.createdAt)} · {log.to}{log.cc.length ? ` · CC: ${log.cc.join(", ")}` : ""}</p>
                     {log.attachment ? <p className="text-csp-black/70">Adjunto: {log.attachment.name}</p> : null}
                     {log.errorMessage ? <p className="text-csp-danger">Error: {log.errorMessage}</p> : null}
@@ -374,6 +422,10 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               {notClassifiedState.lastSentAt ? "Reenviar correo de no clasificación" : "Enviar correo de no clasificación"}
             </Button>
             {!canSendNotClassified ? <p className="text-sm text-csp-black/70">Disponible sólo para equipos no clasificados.</p> : null}
+            <Button disabled={!canSendFinalInstructions} onClick={() => setShowFinalInstructionsConfirmation(true)} type="button">
+              {finalInstructionsState.lastSentAt ? "Reenviar Indicaciones Finales" : "Enviar Indicaciones Finales"}
+            </Button>
+            {!canSendFinalInstructions ? <p className="text-sm text-csp-black/70">Disponible sólo para clasificados con laboratorio asignado.</p> : null}
             <Button onClick={() => void handleCopyEmails()} type="button" variant="secondary">Copiar correos</Button>
           </Card>
 
@@ -438,6 +490,25 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <div className="flex justify-end gap-2 pt-2">
               <Button disabled={isSendingNotClassified} onClick={() => setShowNotClassifiedConfirmation(false)} type="button" variant="secondary">Cancelar</Button>
               <Button isLoading={isSendingNotClassified} onClick={() => void handleSendNotClassified()} type="button" variant="danger">Confirmar envío</Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
+      {showFinalInstructionsConfirmation ? (
+        <div aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-csp-black/50 p-4" role="dialog">
+          <Card className="w-full max-w-lg space-y-3 shadow-xl">
+            <h2 className="font-display text-xl font-semibold text-csp-primary">Confirmar Indicaciones Finales</h2>
+            <p className="text-sm"><strong>Equipo:</strong> {current.teamName}</p>
+            <p className="text-sm"><strong>Laboratorio:</strong> {current.laboratorioAsignado || "Sin asignar"}</p>
+            <p className="text-sm"><strong>Integrantes:</strong> {current.members.map((member) => memberName(member.firstName, member.lastName)).join(", ")}</p>
+            <p className="text-sm"><strong>Para:</strong> {primaryRecipient || "Sin correo"}</p>
+            <p className="text-sm"><strong>CC:</strong> {copiedRecipients.join(", ") || "-"}</p>
+            <p className="text-sm"><strong>Asunto:</strong> Indicaciones finales para la Gran Final de la Copa 2026</p>
+            <p className="text-sm"><strong>Modo:</strong> {deliveryMode === "live" ? "Envío real por Brevo" : "Dry run: Brevo valida sin entregar el correo"}</p>
+            {finalInstructionsState.lastSentAt ? <p className="rounded-md bg-csp-warning/10 p-2 text-sm">Ya se envió exitosamente el {formatDate(finalInstructionsState.lastSentAt)}. Esta acción generará un reenvío.</p> : null}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button disabled={isSendingFinalInstructions} onClick={() => setShowFinalInstructionsConfirmation(false)} type="button" variant="secondary">Cancelar</Button>
+              <Button isLoading={isSendingFinalInstructions} onClick={() => void handleSendFinalInstructions()} type="button">Confirmar envío</Button>
             </div>
           </Card>
         </div>

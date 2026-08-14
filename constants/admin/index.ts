@@ -5,6 +5,12 @@ import {
   RegistrationStatus,
 } from "@/types/admin/registration";
 
+export const LABORATORY_OPTIONS = [
+  { value: "Laboratorio de Tecnología", label: "Laboratorio de Tecnología" },
+  { value: "Laboratorio de Informática 1", label: "Laboratorio de Informática 1" },
+  { value: "Laboratorio de Informática 2", label: "Laboratorio de Informática 2" },
+] as const;
+
 export const EVENT_NAME = "Copa Salvadoreña de Programacion 2026";
 export const EVENT_SHORT_NAME = "CSP 2026";
 

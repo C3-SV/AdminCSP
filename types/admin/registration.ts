@@ -25,6 +25,11 @@ export type CompetitiveStatus =
   | "ganador"
   | "eliminado";
 
+export type LaboratoryAssignment =
+  | "Laboratorio de Tecnología"
+  | "Laboratorio de Informática 1"
+  | "Laboratorio de Informática 2";
+
 export type DiscoverySource =
   | "instagram"
   | "linkedin"
@@ -117,6 +122,7 @@ export type RegistrationDocument = {
   posicionFinal?: number | null;
   fechaPresencial?: string | null;
   sedePresencial?: string | null;
+  laboratorioAsignado?: LaboratoryAssignment | null;
   adminNotes: string;
   createdAt?: string;
   updatedAt?: string;
