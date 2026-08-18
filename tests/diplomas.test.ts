@@ -9,6 +9,7 @@ import {
 } from "@/lib/diplomas/teamDiplomas";
 import { buildDiplomaEmailContent, getDiplomaEmailTeamName } from "@/lib/email/diplomaContent";
 import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
+import { getDiplomaEmailScenario, getDiplomaEmailScenarioLabel } from "@/lib/diplomas/diplomaEmailScenario";
 import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
 import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 import type { RegistrationDocument } from "@/types/admin/registration";
@@ -101,5 +102,13 @@ describe("diplomas CSP 2026", () => {
   it("keeps real team names and makes underscored all-caps imported names readable", () => {
     expect(getDiplomaEmailTeamName("Null Pointers")).toBe("Null Pointers");
     expect(getDiplomaEmailTeamName("PRUEBA_COLEGIOS")).toBe("Prueba Colegios");
+  });
+
+  it("recalculates the University and AdE virtual scenario from the current classification", () => {
+    expect(getDiplomaEmailScenario(team({ estadoCompetitivo: "clasificado" }), "virtual")).toBe("virtual_clasificado_final");
+    expect(getDiplomaEmailScenario(team({ estadoCompetitivo: "no_clasificado" }), "virtual")).toBe("virtual_participacion");
+    expect(getDiplomaEmailScenario(team({ estadoCompetitivo: "clasificado", participacionPresencial: true }), "virtual")).toBe("virtual_participacion");
+    expect(getDiplomaEmailScenario(team({ category: "ade", estadoCompetitivo: "clasificado" }), "virtual")).toBe("virtual_clasificado_final");
+    expect(getDiplomaEmailScenarioLabel("virtual_clasificado_final")).toContain("5 de septiembre");
   });
 });

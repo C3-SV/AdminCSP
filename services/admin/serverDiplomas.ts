@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { generateTeamDiplomas, type DiplomaPhase, type ParticipantDiploma } from "@/lib/diplomas/teamDiplomas";
 import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
+import { getDiplomaEmailScenario } from "@/lib/diplomas/diplomaEmailScenario";
 import { assertEmailDeliveryEnabled } from "@/lib/email/emailDeliveryControl";
 import { buildDiplomaEmailContent } from "@/lib/email/diplomaContent";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
@@ -29,6 +30,12 @@ function mapRegistration(snapshot: FirebaseFirestore.DocumentSnapshot): Registra
 }
 
 async function readRegistration(id: string) { return mapRegistration(await teamRef(id).get()); }
+
+export async function getTeamDiplomaPreviewAsAdmin({ id, phase }: { id: string; phase: DiplomaPhase }) {
+  const registration = await readRegistration(id);
+  assertEligible(registration, phase);
+  return { registration, emailScenario: getDiplomaEmailScenario(registration, phase) };
+}
 
 function assertEligible(registration: RegistrationDocument, phase: DiplomaPhase) {
   if (registration.status !== "aprobada") throw new AdminMutationError("Sólo los equipos aprobados pueden recibir diplomas.", 422);
@@ -148,12 +155,13 @@ export async function sendTeamDiplomasAsAdmin({
   const recipients = resolveVirtualInstructionRecipients(registration);
   if (!recipients) throw new AdminMutationError("El equipo no tiene un correo válido para notificar.", 422);
   const content = buildDiplomaEmailContent(registration, phase);
+  const emailScenario = getDiplomaEmailScenario(registration, phase);
   const actionOutboxRef = outboxRef(phase, operationId);
   const existing = await actionOutboxRef.get();
   if (existing.exists) {
     const record = existing.data() ?? {};
     if (record.registrationId !== id || record.kind !== `diplomas_${phase}`) throw new AdminMutationError("La operación no coincide con el equipo solicitado.", 409);
-    if (record.status === "sent" || record.status === "dry_run") return { registration: await readRegistration(id), alreadyProcessed: true };
+    if (record.status === "sent" || record.status === "dry_run") return { registration: await readRegistration(id), emailScenario, alreadyProcessed: true };
     throw new AdminMutationError("Esta operación ya fue procesada. Genera una nueva para reintentar.", 409);
   }
   await actionOutboxRef.create({
@@ -183,7 +191,7 @@ export async function sendTeamDiplomasAsAdmin({
     });
     const status = deliveryMode() === "live" ? "sent" : "dry_run";
     const log = await persist({ id, phase, operationId, updatedBy, recipients, subject: content.subject, status, files, messageId: result.messageId });
-    return { registration: await readRegistration(id), log, alreadyProcessed: false };
+    return { registration: await readRegistration(id), log, emailScenario, alreadyProcessed: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "No fue posible generar o enviar los diplomas.";
     const log = await persist({ id, phase, operationId, updatedBy, recipients, subject: content.subject, status: "failed", files, errorMessage: message });

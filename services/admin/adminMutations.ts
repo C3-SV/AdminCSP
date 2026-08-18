@@ -1,4 +1,5 @@
 import type { CompetitiveActionKey } from "@/lib/admin/competitiveActions";
+import type { DiplomaEmailScenario } from "@/lib/diplomas/diplomaEmailScenario";
 import type { EmailLog } from "@/types/admin/email";
 import type {
   CompetitivePhase,
@@ -18,6 +19,7 @@ type ApiResponse = {
   registration?: RegistrationDocument;
   logs?: EmailLog[];
   log?: EmailLog;
+  emailScenario?: DiplomaEmailScenario;
   deliveryMode?: "live" | "dry_run";
   settings?: { enabled: boolean; updatedBy?: string; updatedAt?: string };
 };
@@ -147,6 +149,20 @@ export async function sendTeamDiplomas({
   });
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };
+}
+
+export async function getTeamDiplomaPreview({
+  user,
+  id,
+  phase,
+}: {
+  user: FirebaseSessionUser | null;
+  id: string;
+  phase: "virtual" | "presencial";
+}) {
+  const body = await authorizedRequest(user, `/api/admin/registrations/${encodeURIComponent(id)}/emails/diplomas?phase=${phase}`);
+  if (!body.registration || !body.emailScenario) throw new Error("No se recibió la vista previa actualizada del diploma.");
+  return { registration: body.registration, emailScenario: body.emailScenario };
 }
 
 export async function getRegistrationEmailHistory({

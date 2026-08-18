@@ -18,9 +18,11 @@ import {
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
 import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
 import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
+import { getDiplomaEmailScenarioLabel, type DiplomaEmailScenario } from "@/lib/diplomas/diplomaEmailScenario";
 import { generateOnsiteFinalistCardInBrowser, generateOnsiteFinalistStoryInBrowser, generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
+  getTeamDiplomaPreview,
   saveRegistrationStatus,
   saveRegistrationResults,
   sendNotClassified,
@@ -87,11 +89,12 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const [isSendingFinalInstructions, setIsSendingFinalInstructions] = useState(false);
   const [isSendingDiplomaVirtual, setIsSendingDiplomaVirtual] = useState(false);
   const [isSendingDiplomaPresencial, setIsSendingDiplomaPresencial] = useState(false);
+  const [isLoadingDiplomaPreview, setIsLoadingDiplomaPreview] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOnsiteConfirmation, setShowOnsiteConfirmation] = useState(false);
   const [showNotClassifiedConfirmation, setShowNotClassifiedConfirmation] = useState(false);
   const [showFinalInstructionsConfirmation, setShowFinalInstructionsConfirmation] = useState(false);
-  const [diplomaConfirmationPhase, setDiplomaConfirmationPhase] = useState<"virtual" | "presencial" | null>(null);
+  const [diplomaConfirmation, setDiplomaConfirmation] = useState<{ phase: "virtual" | "presencial"; emailScenario: DiplomaEmailScenario } | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<"live" | "dry_run">("dry_run");
   const [onlineScore, setOnlineScore] = useState(registration.puntajeOnline?.toString() ?? "");
   const [onsiteScore, setOnsiteScore] = useState(registration.puntajePresencial?.toString() ?? "");
@@ -335,12 +338,26 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
       const result = await sendTeamDiplomas({ user, id: current.id, phase: phaseToSend, operationId: crypto.randomUUID() });
       setCurrent(result.registration);
       if (result.log) setLogs((history) => [result.log as EmailLog, ...history]);
-      setDiplomaConfirmationPhase(null);
+      setDiplomaConfirmation(null);
       setToast({ message: `Diplomas de fase ${phaseToSend === "virtual" ? "virtual" : "presencial"} procesados. Revisa el historial para confirmar el estado.`, variant: "success" });
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : "No fue posible enviar los diplomas.", variant: "error" });
     } finally {
       setSending(false);
+    }
+  };
+
+  const openDiplomaConfirmation = async (phaseToSend: "virtual" | "presencial") => {
+    setIsLoadingDiplomaPreview(true);
+    try {
+      // The preview is read from Firestore immediately before the confirmation is shown.
+      const preview = await getTeamDiplomaPreview({ user, id: current.id, phase: phaseToSend });
+      setCurrent(preview.registration);
+      setDiplomaConfirmation({ phase: phaseToSend, emailScenario: preview.emailScenario });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : "No fue posible preparar el envío de diplomas.", variant: "error" });
+    } finally {
+      setIsLoadingDiplomaPreview(false);
     }
   };
 
@@ -496,7 +513,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <div className="border-t border-csp-soft pt-4">
               <p className="font-semibold text-csp-primary">Fase Virtual</p>
               <p className="mt-1 text-sm text-csp-black/70">{diplomasVirtualState.lastSentAt ? `✓ Enviado el ${formatDate(diplomasVirtualState.lastSentAt)}` : "Pendiente"}</p>
-              <Button disabled={!canSendDiplomaVirtual} isLoading={isSendingDiplomaVirtual} onClick={() => setDiplomaConfirmationPhase("virtual")} type="button" variant="secondary">
+              <Button disabled={!canSendDiplomaVirtual} isLoading={isSendingDiplomaVirtual || isLoadingDiplomaPreview} onClick={() => void openDiplomaConfirmation("virtual")} type="button" variant="secondary">
                 {diplomasVirtualState.lastSentAt ? "Reenviar diploma fase virtual" : "Enviar diploma fase virtual"}
               </Button>
               {!canSendDiplomaVirtual ? <p className="mt-1 text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : virtualDiplomaSuspension ?? "El equipo todavía no registra participación en la fase virtual."}</p> : null}
@@ -504,7 +521,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <div className="border-t border-csp-soft pt-4">
               <p className="font-semibold text-csp-primary">Fase Presencial</p>
               <p className="mt-1 text-sm text-csp-black/70">{diplomasPresencialState.lastSentAt ? `✓ Enviado el ${formatDate(diplomasPresencialState.lastSentAt)}` : "Pendiente"}</p>
-              <Button disabled={!canSendDiplomaPresencial} isLoading={isSendingDiplomaPresencial} onClick={() => setDiplomaConfirmationPhase("presencial")} type="button" variant="secondary">
+              <Button disabled={!canSendDiplomaPresencial} isLoading={isSendingDiplomaPresencial || isLoadingDiplomaPreview} onClick={() => void openDiplomaConfirmation("presencial")} type="button" variant="secondary">
                 {diplomasPresencialState.lastSentAt ? "Reenviar diploma fase presencial" : "Enviar diploma fase presencial"}
               </Button>
               {!canSendDiplomaPresencial ? <p className="mt-1 text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : presencialDiplomaSuspension ?? "El equipo todavía no registra participación en la fase presencial."}</p> : null}
@@ -521,24 +538,25 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
         </div>
       </div>
 
-      {diplomaConfirmationPhase ? (
+      {diplomaConfirmation ? (
         <div aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-csp-black/50 p-4" role="dialog">
           <Card className="w-full max-w-lg space-y-3 shadow-xl">
-            <h2 className="font-display text-xl font-semibold text-csp-primary">Enviar diplomas de fase {diplomaConfirmationPhase === "virtual" ? "virtual" : "presencial"}</h2>
+            <h2 className="font-display text-xl font-semibold text-csp-primary">Enviar diplomas de fase {diplomaConfirmation.phase === "virtual" ? "virtual" : "presencial"}</h2>
             <p className="text-sm"><strong>Equipo:</strong> {current.teamName}</p>
             <p className="text-sm"><strong>Categoría:</strong> {REGISTRATION_CATEGORY_LABELS[current.category]}</p>
             <p className="text-sm"><strong>Integrantes:</strong> {current.members.length}</p>
-            <p className="text-sm">Se generarán {current.members.length} diplomas individuales{diplomaConfirmationPhase === "presencial" ? " de la Final Presencial" : ""}.</p>
+            <p className="text-sm">Se generarán {current.members.length} diplomas individuales{diplomaConfirmation.phase === "presencial" ? " de la Final Presencial" : ""}.</p>
             <ul className="list-disc space-y-1 pl-5 text-sm">
               {current.members.map((member, index) => <li key={`${member.id}-${index}`}>{memberName(member.firstName, member.lastName)}</li>)}
             </ul>
             <p className="text-sm"><strong>Para:</strong> {primaryRecipient || "Sin correo"}</p>
             <p className="text-sm"><strong>CC:</strong> {copiedRecipients.join(", ") || "-"}</p>
+            <p className="rounded-md border border-csp-soft bg-csp-soft/20 p-2 text-sm"><strong>Tipo de mensaje:</strong> {getDiplomaEmailScenarioLabel(diplomaConfirmation.emailScenario)} Se validó con el estado actual del equipo y se volverá a validar al enviar.</p>
             <p className="text-sm"><strong>Modo:</strong> {deliveryMode === "live" ? "Envío real por Brevo" : "Dry run: Brevo valida sin entregar el correo"}</p>
-            {(diplomaConfirmationPhase === "virtual" ? diplomasVirtualState : diplomasPresencialState).lastSentAt ? <p className="rounded-md bg-csp-warning/10 p-2 text-sm">Ya se enviaron exitosamente estos diplomas el {formatDate((diplomaConfirmationPhase === "virtual" ? diplomasVirtualState : diplomasPresencialState).lastSentAt)}. Esta acción generará un reenvío.</p> : null}
+            {(diplomaConfirmation.phase === "virtual" ? diplomasVirtualState : diplomasPresencialState).lastSentAt ? <p className="rounded-md bg-csp-warning/10 p-2 text-sm">Ya se enviaron exitosamente estos diplomas el {formatDate((diplomaConfirmation.phase === "virtual" ? diplomasVirtualState : diplomasPresencialState).lastSentAt)}. Esta acción generará un reenvío.</p> : null}
             <div className="flex justify-end gap-2 pt-2">
-              <Button disabled={isSendingDiplomaVirtual || isSendingDiplomaPresencial} onClick={() => setDiplomaConfirmationPhase(null)} type="button" variant="secondary">Cancelar</Button>
-              <Button isLoading={diplomaConfirmationPhase === "virtual" ? isSendingDiplomaVirtual : isSendingDiplomaPresencial} onClick={() => void handleSendDiplomas(diplomaConfirmationPhase)} type="button">Generar y enviar</Button>
+              <Button disabled={isSendingDiplomaVirtual || isSendingDiplomaPresencial} onClick={() => setDiplomaConfirmation(null)} type="button" variant="secondary">Cancelar</Button>
+              <Button isLoading={diplomaConfirmation.phase === "virtual" ? isSendingDiplomaVirtual : isSendingDiplomaPresencial} onClick={() => void handleSendDiplomas(diplomaConfirmation.phase)} type="button">Generar y enviar</Button>
             </div>
           </Card>
         </div>

@@ -1,4 +1,5 @@
 import type { DiplomaPhase } from "@/lib/diplomas/teamDiplomas";
+import { getDiplomaEmailScenario } from "@/lib/diplomas/diplomaEmailScenario";
 import type { RegistrationDocument } from "@/types/admin/registration";
 
 const COMMUNITY_C3_URL = "https://chat.whatsapp.com/FXy86Ay5B1wDTrqu4rg0R6";
@@ -72,6 +73,7 @@ const CLASSIFIED_COMMUNITY_CTA: CommunityCallToAction = {
 export function buildDiplomaEmailContent(registration: RegistrationDocument, phase: DiplomaPhase) {
   const teamName = getDiplomaEmailTeamName(registration.teamName);
   const communityAudience = isCommunityAudience(registration);
+  const scenario = getDiplomaEmailScenario(registration, phase);
 
   if (phase === "presencial") {
     const paragraphs = [
@@ -89,7 +91,7 @@ export function buildDiplomaEmailContent(registration: RegistrationDocument, pha
     return wrap(phase, paragraphs, communityAudience ? GENERAL_COMMUNITY_CTA : undefined);
   }
 
-  if (communityAudience && registration.estadoCompetitivo === "clasificado" && !registration.participacionPresencial) {
+  if (scenario === "virtual_clasificado_final") {
     return wrap(phase, [
       `Hola, equipo ${teamName}:`,
       "¡Felicidades nuevamente! 🚀",
