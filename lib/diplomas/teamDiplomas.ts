@@ -18,8 +18,8 @@ export const DIPLOMA_TEMPLATES: Record<KnownRegistrationCategory, Record<Diploma
 /** The inset safe zone inside the 498.122 x 63.859 pt white name rectangle. */
 export const DIPLOMA_NAME_AREA = {
   x: 191.884,
-  // Shifted 4 pt upward after visual review while retaining a safe white-space margin.
-  y: 314.895,
+  // Shifted 10 pt upward after visual review while retaining a safe white-space margin.
+  y: 320.895,
   width: 458.122,
   height: 47.859,
   preferredFontSize: 32,

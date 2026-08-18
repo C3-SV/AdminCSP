@@ -1,7 +1,6 @@
 import type { DiplomaPhase } from "@/lib/diplomas/teamDiplomas";
 import type { RegistrationDocument } from "@/types/admin/registration";
 
-const SUBJECT = "Entrega de diplomas | Copa Salvadoreña de Programación";
 const COMMUNITY_C3_URL = "https://chat.whatsapp.com/FXy86Ay5B1wDTrqu4rg0R6";
 
 type CommunityCallToAction = {
@@ -35,7 +34,13 @@ function communityHtml(callToAction: CommunityCallToAction) {
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:28px 0;background:#edfafa;border:1px solid #a5e3db;border-radius:14px"><tr><td align="center" style="padding:26px 22px"><p style="margin:0 0 10px;color:#29225d;font-size:19px;font-weight:700;line-height:1.3">${escapeHtml(callToAction.title)}</p><p style="margin:0 0 22px;color:#34345b;font-size:15px;line-height:1.6">${escapeHtml(callToAction.description)}</p><a href="${COMMUNITY_C3_URL}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#33BEAC;color:#ffffff;padding:14px 25px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:.2px;text-decoration:none">UNIRME A COMUNIDAD C3</a></td></tr></table>`;
 }
 
-function wrap(paragraphs: string[], callToAction?: CommunityCallToAction) {
+function getDiplomaEmailSubject(phase: DiplomaPhase) {
+  return phase === "virtual"
+    ? "Entrega de diplomas de Fase Virtual | Copa Salvadoreña de Programación"
+    : "Entrega de diplomas de Final Presencial | Copa Salvadoreña de Programación";
+}
+
+function wrap(phase: DiplomaPhase, paragraphs: string[], callToAction?: CommunityCallToAction) {
   const textContent = [...paragraphs.slice(0, -1), ...(callToAction ? [communityText(callToAction)] : []), paragraphs.at(-1) ?? ""].join("\n\n");
   const introHtml = paragraphs
     .slice(0, -1)
@@ -44,7 +49,7 @@ function wrap(paragraphs: string[], callToAction?: CommunityCallToAction) {
   const signatureHtml = `<p style="margin:0">${escapeHtml(paragraphs.at(-1) ?? "").replace(/\n/g, "<br />")}</p>`;
 
   return {
-    subject: SUBJECT,
+    subject: getDiplomaEmailSubject(phase),
     textContent,
     htmlContent: `<!doctype html><html><body style="margin:0;background:#f4f5ff;font-family:Arial,sans-serif;color:#29225d"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:32px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden"><tr><td style="background:#33247c;padding:30px;color:#ffffff"><p style="margin:0;font-size:14px;font-weight:bold;color:#72ded2">C3 · COPA SALVADOREÑA DE PROGRAMACIÓN 2026</p><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2">Entrega de diplomas</h1></td></tr><tr><td style="padding:30px;font-size:16px;line-height:1.6">${introHtml}${callToAction ? communityHtml(callToAction) : ""}${signatureHtml}</td></tr></table></td></tr></table></body></html>`,
   };
@@ -81,11 +86,11 @@ export function buildDiplomaEmailContent(registration: RegistrationDocument, pha
         : "Gracias por competir, por aceptar el reto y por formar parte de esta edición.",
       "Equipo C3\nCopa Salvadoreña de Programación 2026",
     ];
-    return wrap(paragraphs, communityAudience ? GENERAL_COMMUNITY_CTA : undefined);
+    return wrap(phase, paragraphs, communityAudience ? GENERAL_COMMUNITY_CTA : undefined);
   }
 
   if (communityAudience && registration.estadoCompetitivo === "clasificado" && !registration.participacionPresencial) {
-    return wrap([
+    return wrap(phase, [
       `Hola, equipo ${teamName}:`,
       "¡Felicidades nuevamente! 🚀",
       "Completaron la Fase Virtual de la Copa Salvadoreña de Programación 2026 y consiguieron su lugar en la siguiente etapa.",
@@ -98,7 +103,7 @@ export function buildDiplomaEmailContent(registration: RegistrationDocument, pha
     ], CLASSIFIED_COMMUNITY_CTA);
   }
 
-  return wrap([
+  return wrap(phase, [
     `Hola, equipo ${teamName}:`,
     "¡Gracias por haber sido parte de la Copa Salvadoreña de Programación 2026! 💻",
     "Durante la Fase Virtual tuvieron la oportunidad de competir, enfrentarse a nuevos problemas y poner a prueba sus habilidades junto a equipos de diferentes instituciones del país.",

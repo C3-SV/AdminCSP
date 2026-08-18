@@ -68,7 +68,7 @@ describe("diplomas CSP 2026", () => {
   }, 30_000);
 
   it("uses a centered safe name region with room from the official white rectangle", () => {
-    expect(DIPLOMA_NAME_AREA).toMatchObject({ x: 191.884, y: 314.895, width: 458.122, height: 47.859, preferredFontSize: 32, minFontSize: 18 });
+    expect(DIPLOMA_NAME_AREA).toMatchObject({ x: 191.884, y: 320.895, width: 458.122, height: 47.859, preferredFontSize: 32, minFontSize: 18 });
   });
 
   it("marks participation from authoritative results without treating classification as onsite attendance", () => {
@@ -86,12 +86,15 @@ describe("diplomas CSP 2026", () => {
 
   it("uses the qualified virtual message only for University and AdE teams before participating onsite", () => {
     const classifiedVirtual = buildDiplomaEmailContent(team({ estadoCompetitivo: "clasificado" }), "virtual");
+    expect(classifiedVirtual.subject).toContain("Fase Virtual");
     expect(classifiedVirtual.textContent).toContain("5 de septiembre");
     expect(classifiedVirtual.htmlContent).toContain("UNIRME A COMUNIDAD C3");
     expect(classifiedVirtual.htmlContent).toContain("https://chat.whatsapp.com/FXy86Ay5B1wDTrqu4rg0R6");
     expect(buildDiplomaEmailContent(team({ estadoCompetitivo: "clasificado", participacionPresencial: true }), "virtual").textContent).not.toContain("5 de septiembre");
     expect(buildDiplomaEmailContent(team({ category: "colegios", estadoCompetitivo: "clasificado" }), "virtual").textContent).not.toContain("5 de septiembre");
-    expect(buildDiplomaEmailContent(team({ category: "colegios" }), "presencial").textContent).toContain("¡Lo lograron!");
+    const onsiteCollege = buildDiplomaEmailContent(team({ category: "colegios" }), "presencial");
+    expect(onsiteCollege.subject).toContain("Final Presencial");
+    expect(onsiteCollege.textContent).toContain("¡Lo lograron!");
     expect(buildDiplomaEmailContent(team(), "presencial").htmlContent).toContain("UNIRME A COMUNIDAD C3");
   });
 
