@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
-import { LABORATORY_OPTIONS, REGISTRATION_CATEGORY_LABELS } from "@/constants/admin";
+import { LABORATORY_OPTIONS } from "@/constants/admin";
 import { getRegistrations, resolveRegistrationCompetitiveView } from "@/services/admin/registrations";
 import { KnownRegistrationCategory, RegistrationDocument } from "@/types/admin/registration";
 import { countByStatus, countParticipants, uniqueInstitutions } from "@/utils/admin/metrics";
@@ -34,7 +34,10 @@ function isReachable(registration: RegistrationDocument) {
     .some((email) => Boolean(email?.trim()));
 }
 
-const CATEGORIES: KnownRegistrationCategory[] = ["colegios", "universidades", "ade"];
+const CATEGORY_GROUPS: Array<{ key: "colegios" | "universidades_ade"; label: string; categories: KnownRegistrationCategory[] }> = [
+  { key: "colegios", label: "Colegios", categories: ["colegios"] },
+  { key: "universidades_ade", label: "Universidades + AdE", categories: ["universidades", "ade"] },
+];
 
 export default function AdminEstadisticasPage() {
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
@@ -76,10 +79,10 @@ export default function AdminEstadisticasPage() {
       view.estadoCompetitivoMostrado === "clasificado",
     ).length;
     const onsiteScores = registrations.filter((item) => typeof item.puntajePresencial === "number");
-    const byCategory = CATEGORIES.map((category) => {
-      const teams = registrations.filter((item) => item.category === category);
+    const byCategory = CATEGORY_GROUPS.map((group) => {
+      const teams = registrations.filter((item) => group.categories.includes(item.category as KnownRegistrationCategory));
       return {
-        category,
+        ...group,
         total: teams.length,
         approved: teams.filter((item) => item.status === "aprobada").length,
         emailSent: teams.filter((item) => item.emailStatus.virtualInstructions.status === "sent").length,
@@ -219,8 +222,8 @@ export default function AdminEstadisticasPage() {
                 </thead>
                 <tbody>
                   {totals.byCategory.map((item) => (
-                    <tr className="border-b border-csp-soft/70" key={item.category}>
-                      <td className="py-2 pr-4 font-medium">{REGISTRATION_CATEGORY_LABELS[item.category]}</td><td className="py-2 pr-4">{item.total}</td><td className="py-2 pr-4">{item.approved}</td><td className="py-2 pr-4">{item.emailSent}</td><td className="py-2 pr-4">{item.online}</td><td className="py-2">{item.progressedToOnsite}</td>
+                    <tr className="border-b border-csp-soft/70" key={item.key}>
+                      <td className="py-2 pr-4 font-medium">{item.label}</td><td className="py-2 pr-4">{item.total}</td><td className="py-2 pr-4">{item.approved}</td><td className="py-2 pr-4">{item.emailSent}</td><td className="py-2 pr-4">{item.online}</td><td className="py-2">{item.progressedToOnsite}</td>
                     </tr>
                   ))}
                 </tbody>
