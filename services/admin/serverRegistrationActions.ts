@@ -3,6 +3,7 @@ import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { LABORATORY_OPTIONS } from "@/constants/admin";
 import { COMPETITIVE_ACTIONS, CompetitiveActionKey } from "@/lib/admin/competitiveActions";
+import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { mapRegistrationFromFirestore } from "@/services/admin/registrations";
 import {
@@ -71,10 +72,18 @@ export async function applyCompetitiveActionAsAdmin({
 }) {
   const actionDefinition = COMPETITIVE_ACTIONS[action];
   const ref = registrationRef(id);
-  toRegistration(await ref.get());
+  const registration = toRegistration(await ref.get());
+  const participation = resolveParticipationStatus({
+    puntajeOnline: registration.puntajeOnline ?? null,
+    puntajePresencial: registration.puntajePresencial ?? null,
+    participacionVirtual: Boolean(registration.participacionVirtual),
+    participacionPresencial: Boolean(registration.participacionPresencial),
+    estadoCompetitivo: actionDefinition.estadoCompetitivo,
+  });
   await ref.update({
     faseActual: actionDefinition.faseActual,
     estadoCompetitivo: actionDefinition.estadoCompetitivo,
+    ...participation,
     ...auditPayload(updatedBy),
   });
   return { registration: await readRegistration(id), emailSent: false };
@@ -101,11 +110,17 @@ export async function updateRegistrationResultsAsAdmin({
 }) {
   const ref = registrationRef(id);
   toRegistration(await ref.get());
-  await ref.update({
+  const participation = resolveParticipationStatus({
     puntajeOnline,
     puntajePresencial,
     participacionVirtual,
     participacionPresencial,
+    estadoCompetitivo,
+  });
+  await ref.update({
+    puntajeOnline,
+    puntajePresencial,
+    ...participation,
     faseActual,
     estadoCompetitivo,
     ...auditPayload(updatedBy),

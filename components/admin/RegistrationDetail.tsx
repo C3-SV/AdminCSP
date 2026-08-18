@@ -16,6 +16,8 @@ import {
   REGISTRATION_STATUS_OPTIONS,
 } from "@/constants/admin";
 import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/admin/registrationPresentation";
+import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
+import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
 import { generateOnsiteFinalistCardInBrowser, generateOnsiteFinalistStoryInBrowser, generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
@@ -162,8 +164,10 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const canSendNotClassified = current.estadoCompetitivo === "no_clasificado" && !usingMockData;
   const canAssignLaboratory = current.estadoCompetitivo === "clasificado" && !usingMockData;
   const canSendFinalInstructions = current.category === "colegios" && canAssignLaboratory && Boolean(current.laboratorioAsignado);
-  const canSendDiplomaVirtual = current.status === "aprobada" && current.category !== "desconocida" && current.participacionVirtual && !usingMockData;
-  const canSendDiplomaPresencial = current.status === "aprobada" && current.category !== "desconocida" && current.participacionPresencial && !usingMockData;
+  const virtualDiplomaSuspension = getDiplomaDeliverySuspension(current.category, "virtual");
+  const presencialDiplomaSuspension = getDiplomaDeliverySuspension(current.category, "presencial");
+  const canSendDiplomaVirtual = current.status === "aprobada" && current.category !== "desconocida" && current.participacionVirtual && !virtualDiplomaSuspension && !usingMockData;
+  const canSendDiplomaPresencial = current.status === "aprobada" && current.category !== "desconocida" && current.participacionPresencial && !presencialDiplomaSuspension && !usingMockData;
 
   const handleSave = async () => {
     if (usingMockData) {
@@ -211,13 +215,21 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
     try {
       const selectedPhase = overrides?.phase ?? phase;
       const selectedStatus = overrides?.status ?? competitiveState;
+      const selectedOnlineScore = readScore(onlineScore, "Puntaje online");
+      const selectedOnsiteScore = readScore(onsiteScore, "Puntaje presencial");
+      const resolvedParticipation = resolveParticipationStatus({
+        puntajeOnline: selectedOnlineScore,
+        puntajePresencial: selectedOnsiteScore,
+        participacionVirtual,
+        participacionPresencial,
+        estadoCompetitivo: selectedStatus,
+      });
       const updated = await saveRegistrationResults({
         user,
         id: current.id,
-        puntajeOnline: readScore(onlineScore, "Puntaje online"),
-        puntajePresencial: readScore(onsiteScore, "Puntaje presencial"),
-        participacionVirtual,
-        participacionPresencial,
+        puntajeOnline: selectedOnlineScore,
+        puntajePresencial: selectedOnsiteScore,
+        ...resolvedParticipation,
         faseActual: selectedPhase,
         estadoCompetitivo: selectedStatus,
       });
@@ -363,8 +375,8 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <p className="mt-1 text-sm text-csp-black/70">Guardar estos cambios no envía correos ni notificaciones.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input id="online-score" label="Puntaje online" min="0" onChange={(event) => setOnlineScore(event.target.value)} step="any" type="number" value={onlineScore} />
-              <Input id="onsite-score" label="Puntaje presencial" min="0" onChange={(event) => setOnsiteScore(event.target.value)} step="any" type="number" value={onsiteScore} />
+              <Input id="online-score" label="Puntaje online" min="0" onChange={(event) => { setOnlineScore(event.target.value); if (event.target.value.trim()) setParticipacionVirtual(true); }} step="any" type="number" value={onlineScore} />
+              <Input id="onsite-score" label="Puntaje presencial" min="0" onChange={(event) => { setOnsiteScore(event.target.value); if (event.target.value.trim()) setParticipacionPresencial(true); }} step="any" type="number" value={onsiteScore} />
               <Select id="competitive-phase" label="Fase actual" onChange={(event) => setPhase(event.target.value as CompetitivePhase)} options={COMPETITIVE_PHASE_OPTIONS} value={phase} />
               <Select id="competitive-status" label="Estado competitivo" onChange={(event) => setCompetitiveState(event.target.value as CompetitiveStatus)} options={COMPETITIVE_STATUS_OPTIONS} value={competitiveState} />
             </div>
@@ -487,7 +499,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <Button disabled={!canSendDiplomaVirtual} isLoading={isSendingDiplomaVirtual} onClick={() => setDiplomaConfirmationPhase("virtual")} type="button" variant="secondary">
                 {diplomasVirtualState.lastSentAt ? "Reenviar diploma fase virtual" : "Enviar diploma fase virtual"}
               </Button>
-              {!canSendDiplomaVirtual ? <p className="mt-1 text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : "El equipo todavía no registra participación en la fase virtual."}</p> : null}
+              {!canSendDiplomaVirtual ? <p className="mt-1 text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : virtualDiplomaSuspension ?? "El equipo todavía no registra participación en la fase virtual."}</p> : null}
             </div>
             <div className="border-t border-csp-soft pt-4">
               <p className="font-semibold text-csp-primary">Fase Presencial</p>
@@ -495,7 +507,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
               <Button disabled={!canSendDiplomaPresencial} isLoading={isSendingDiplomaPresencial} onClick={() => setDiplomaConfirmationPhase("presencial")} type="button" variant="secondary">
                 {diplomasPresencialState.lastSentAt ? "Reenviar diploma fase presencial" : "Enviar diploma fase presencial"}
               </Button>
-              {!canSendDiplomaPresencial ? <p className="mt-1 text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : "El equipo todavía no registra participación en la fase presencial."}</p> : null}
+              {!canSendDiplomaPresencial ? <p className="mt-1 text-sm text-csp-black/70">{usingMockData ? "No disponible con datos de prueba." : presencialDiplomaSuspension ?? "El equipo todavía no registra participación en la fase presencial."}</p> : null}
             </div>
             <Button onClick={() => void handleCopyEmails()} type="button" variant="secondary">Copiar correos</Button>
           </Card>

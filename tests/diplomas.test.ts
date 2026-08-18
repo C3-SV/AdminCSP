@@ -8,6 +8,8 @@ import {
   generateParticipantDiploma,
 } from "@/lib/diplomas/teamDiplomas";
 import { buildDiplomaEmailContent } from "@/lib/email/diplomaContent";
+import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
+import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
 import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
 import type { RegistrationDocument } from "@/types/admin/registration";
 
@@ -66,7 +68,20 @@ describe("diplomas CSP 2026", () => {
   }, 30_000);
 
   it("uses a centered safe name region with room from the official white rectangle", () => {
-    expect(DIPLOMA_NAME_AREA).toMatchObject({ x: 191.884, y: 310.895, width: 458.122, height: 47.859, preferredFontSize: 32, minFontSize: 18 });
+    expect(DIPLOMA_NAME_AREA).toMatchObject({ x: 191.884, y: 314.895, width: 458.122, height: 47.859, preferredFontSize: 32, minFontSize: 18 });
+  });
+
+  it("marks participation from authoritative results without treating classification as onsite attendance", () => {
+    expect(resolveParticipationStatus({ puntajeOnline: 0, puntajePresencial: null, participacionVirtual: false, participacionPresencial: false, estadoCompetitivo: "pendiente" })).toEqual({ participacionVirtual: true, participacionPresencial: false });
+    expect(resolveParticipationStatus({ puntajeOnline: null, puntajePresencial: null, participacionVirtual: false, participacionPresencial: false, estadoCompetitivo: "clasificado" })).toEqual({ participacionVirtual: true, participacionPresencial: false });
+    expect(resolveParticipationStatus({ puntajeOnline: null, puntajePresencial: 0, participacionVirtual: false, participacionPresencial: false, estadoCompetitivo: "clasificado" })).toEqual({ participacionVirtual: true, participacionPresencial: true });
+  });
+
+  it("suspends only University and AdE onsite diploma delivery", () => {
+    expect(getDiplomaDeliverySuspension("colegios", "presencial")).toBeNull();
+    expect(getDiplomaDeliverySuspension("universidades", "virtual")).toBeNull();
+    expect(getDiplomaDeliverySuspension("universidades", "presencial")).toContain("suspendidos");
+    expect(getDiplomaDeliverySuspension("ade", "presencial")).toContain("suspendidos");
   });
 
   it("uses the qualified virtual message only before participating onsite", () => {

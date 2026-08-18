@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { generateTeamDiplomas, type DiplomaPhase, type ParticipantDiploma } from "@/lib/diplomas/teamDiplomas";
+import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
 import { assertEmailDeliveryEnabled } from "@/lib/email/emailDeliveryControl";
 import { buildDiplomaEmailContent } from "@/lib/email/diplomaContent";
 import { sendBrevoEmail } from "@/lib/email/sendBrevoEmail";
@@ -32,6 +33,8 @@ async function readRegistration(id: string) { return mapRegistration(await teamR
 function assertEligible(registration: RegistrationDocument, phase: DiplomaPhase) {
   if (registration.status !== "aprobada") throw new AdminMutationError("Sólo los equipos aprobados pueden recibir diplomas.", 422);
   if (registration.category === "desconocida") throw new AdminMutationError("La categoría del equipo no es válida para generar diplomas.", 422);
+  const suspension = getDiplomaDeliverySuspension(registration.category, phase);
+  if (suspension) throw new AdminMutationError(suspension, 422);
   const participated = phase === "virtual" ? registration.participacionVirtual : registration.participacionPresencial;
   if (!participated) {
     const phaseLabel = phase === "virtual" ? "virtual" : "presencial";
