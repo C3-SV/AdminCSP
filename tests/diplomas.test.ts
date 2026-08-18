@@ -7,7 +7,7 @@ import {
   getParticipantFullName,
   generateParticipantDiploma,
 } from "@/lib/diplomas/teamDiplomas";
-import { buildDiplomaEmailContent } from "@/lib/email/diplomaContent";
+import { buildDiplomaEmailContent, getDiplomaEmailTeamName } from "@/lib/email/diplomaContent";
 import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
 import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
 import { EMPTY_EMAIL_STATUS } from "@/types/admin/email";
@@ -84,9 +84,19 @@ describe("diplomas CSP 2026", () => {
     expect(getDiplomaDeliverySuspension("ade", "presencial")).toContain("suspendidos");
   });
 
-  it("uses the qualified virtual message only before participating onsite", () => {
-    expect(buildDiplomaEmailContent(team({ estadoCompetitivo: "clasificado" }), "virtual").textContent).toContain("Nos vemos en la final");
-    expect(buildDiplomaEmailContent(team({ estadoCompetitivo: "clasificado", participacionPresencial: true }), "virtual").textContent).not.toContain("Nos vemos en la final");
-    expect(buildDiplomaEmailContent(team(), "presencial").textContent).toContain("Final Presencial");
+  it("uses the qualified virtual message only for University and AdE teams before participating onsite", () => {
+    const classifiedVirtual = buildDiplomaEmailContent(team({ estadoCompetitivo: "clasificado" }), "virtual");
+    expect(classifiedVirtual.textContent).toContain("5 de septiembre");
+    expect(classifiedVirtual.htmlContent).toContain("UNIRME A COMUNIDAD C3");
+    expect(classifiedVirtual.htmlContent).toContain("https://chat.whatsapp.com/FXy86Ay5B1wDTrqu4rg0R6");
+    expect(buildDiplomaEmailContent(team({ estadoCompetitivo: "clasificado", participacionPresencial: true }), "virtual").textContent).not.toContain("5 de septiembre");
+    expect(buildDiplomaEmailContent(team({ category: "colegios", estadoCompetitivo: "clasificado" }), "virtual").textContent).not.toContain("5 de septiembre");
+    expect(buildDiplomaEmailContent(team({ category: "colegios" }), "presencial").textContent).toContain("¡Lo lograron!");
+    expect(buildDiplomaEmailContent(team(), "presencial").htmlContent).toContain("UNIRME A COMUNIDAD C3");
+  });
+
+  it("keeps real team names and makes underscored all-caps imported names readable", () => {
+    expect(getDiplomaEmailTeamName("Null Pointers")).toBe("Null Pointers");
+    expect(getDiplomaEmailTeamName("PRUEBA_COLEGIOS")).toBe("Prueba Colegios");
   });
 });
