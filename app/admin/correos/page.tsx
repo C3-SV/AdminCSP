@@ -16,6 +16,8 @@ const TYPE_LABELS: Record<EmailLog["emailType"], string> = {
   classified_to_onsite: "Clasificado a presencial",
   not_classified: "No clasificado",
   final_instructions: "Indicaciones Finales",
+  diplomas_virtual: "Diplomas fase virtual",
+  diplomas_presencial: "Diplomas fase presencial",
   finalist: "Finalista",
   winner: "Ganador",
 };

@@ -116,6 +116,10 @@ export type RegistrationDocument = {
   estadoCompetitivo?: CompetitiveStatus | null;
   puntajeOnline?: number | null;
   puntajePresencial?: number | null;
+  /** Confirmed independently of classification; controls diploma eligibility. */
+  participacionVirtual?: boolean;
+  /** Confirmed independently of classification; controls diploma eligibility. */
+  participacionPresencial?: boolean;
   puntajeFinal?: number | null;
   rankingOnline?: number | null;
   rankingPresencial?: number | null;

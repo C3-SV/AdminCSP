@@ -94,6 +94,8 @@ export function saveRegistrationResults({
   id,
   puntajeOnline,
   puntajePresencial,
+  participacionVirtual,
+  participacionPresencial,
   faseActual,
   estadoCompetitivo,
 }: {
@@ -101,12 +103,14 @@ export function saveRegistrationResults({
   id: string;
   puntajeOnline: number | null;
   puntajePresencial: number | null;
+  participacionVirtual: boolean;
+  participacionPresencial: boolean;
   faseActual: CompetitivePhase;
   estadoCompetitivo: CompetitiveStatus;
 }) {
   return requestAdminMutation(user, `/api/admin/registrations/${encodeURIComponent(id)}/results`, {
     method: "PATCH",
-    body: JSON.stringify({ puntajeOnline, puntajePresencial, faseActual, estadoCompetitivo }),
+    body: JSON.stringify({ puntajeOnline, puntajePresencial, participacionVirtual, participacionPresencial, faseActual, estadoCompetitivo }),
   });
 }
 
@@ -121,6 +125,25 @@ export async function sendFinalInstructions({ user, id, operationId }: { user: F
   const body = await authorizedRequest(user, `/api/admin/registrations/${encodeURIComponent(id)}/emails/final-instructions`, {
     method: "POST",
     body: JSON.stringify({ operationId }),
+  });
+  if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
+  return { registration: body.registration, log: body.log };
+}
+
+export async function sendTeamDiplomas({
+  user,
+  id,
+  phase,
+  operationId,
+}: {
+  user: FirebaseSessionUser | null;
+  id: string;
+  phase: "virtual" | "presencial";
+  operationId: string;
+}) {
+  const body = await authorizedRequest(user, `/api/admin/registrations/${encodeURIComponent(id)}/emails/diplomas`, {
+    method: "POST",
+    body: JSON.stringify({ phase, operationId }),
   });
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };

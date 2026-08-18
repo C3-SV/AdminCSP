@@ -148,6 +148,8 @@ function mapEmailStatus(value: unknown): RegistrationEmailStatus {
     classifiedToOnsite: mapEmailStatusEntry(item.classifiedToOnsite),
     notClassified: mapEmailStatusEntry(item.notClassified),
     finalInstructions: mapEmailStatusEntry(item.finalInstructions),
+    diplomasVirtual: mapEmailStatusEntry(item.diplomasVirtual),
+    diplomasPresencial: mapEmailStatusEntry(item.diplomasPresencial),
   };
 }
 
@@ -281,6 +283,13 @@ export function mapRegistrationFromFirestore(
     estadoCompetitivo: normalizeCompetitiveStatus(data.estadoCompetitivo),
     puntajeOnline: toNullableNumber(data.puntajeOnline),
     puntajePresencial: toNullableNumber(data.puntajePresencial),
+    // Legacy registrations are safe to use before the one-time backfill runs.
+    participacionVirtual: typeof data.participacionVirtual === "boolean"
+      ? data.participacionVirtual
+      : toNullableNumber(data.puntajeOnline) !== null,
+    participacionPresencial: typeof data.participacionPresencial === "boolean"
+      ? data.participacionPresencial
+      : toNullableNumber(data.puntajePresencial) !== null,
     puntajeFinal: toNullableNumber(data.puntajeFinal),
     rankingOnline: toNullableNumber(data.rankingOnline),
     rankingPresencial: toNullableNumber(data.rankingPresencial),

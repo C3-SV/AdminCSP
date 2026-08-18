@@ -14,6 +14,8 @@ export type RegistrationEmailStatus = {
   classifiedToOnsite: EmailStatusEntry;
   notClassified: EmailStatusEntry;
   finalInstructions: EmailStatusEntry;
+  diplomasVirtual: EmailStatusEntry;
+  diplomasPresencial: EmailStatusEntry;
 };
 
 export type EmailLogType =
@@ -21,6 +23,8 @@ export type EmailLogType =
   | "classified_to_onsite"
   | "not_classified"
   | "final_instructions"
+  | "diplomas_virtual"
+  | "diplomas_presencial"
   | "finalist"
   | "winner";
 
@@ -36,13 +40,13 @@ export type EmailLog = {
   brevoMessageId?: string;
   attachment?: {
     name: string;
-    contentType: "image/png";
+    contentType: "image/png" | "application/pdf";
     size: number;
     sha256: string;
   };
   attachments?: Array<{
     name: string;
-    contentType: "image/png";
+    contentType: "image/png" | "application/pdf";
     size: number;
     sha256: string;
   }>;
@@ -57,4 +61,6 @@ export const EMPTY_EMAIL_STATUS: RegistrationEmailStatus = {
   classifiedToOnsite: { status: "not_sent" },
   notClassified: { status: "not_sent" },
   finalInstructions: { status: "not_sent" },
+  diplomasVirtual: { status: "not_sent" },
+  diplomasPresencial: { status: "not_sent" },
 };

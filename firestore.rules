@@ -37,6 +37,8 @@ service cloud.firestore {
         "estadoCompetitivo",
         "puntajeOnline",
         "puntajePresencial",
+        "participacionVirtual",
+        "participacionPresencial",
         "puntajeFinal",
         "rankingOnline",
         "rankingPresencial",

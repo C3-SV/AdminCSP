@@ -84,6 +84,8 @@ export async function updateRegistrationResultsAsAdmin({
   id,
   puntajeOnline,
   puntajePresencial,
+  participacionVirtual,
+  participacionPresencial,
   faseActual,
   estadoCompetitivo,
   updatedBy,
@@ -91,6 +93,8 @@ export async function updateRegistrationResultsAsAdmin({
   id: string;
   puntajeOnline: number | null;
   puntajePresencial: number | null;
+  participacionVirtual: boolean;
+  participacionPresencial: boolean;
   faseActual: CompetitivePhase;
   estadoCompetitivo: CompetitiveStatus;
   updatedBy: string;
@@ -100,6 +104,8 @@ export async function updateRegistrationResultsAsAdmin({
   await ref.update({
     puntajeOnline,
     puntajePresencial,
+    participacionVirtual,
+    participacionPresencial,
     faseActual,
     estadoCompetitivo,
     ...auditPayload(updatedBy),

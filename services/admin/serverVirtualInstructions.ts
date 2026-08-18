@@ -92,12 +92,13 @@ function serializeTimestamp(value: unknown): string | undefined {
 }
 
 function mapEmailLog(id: string, data: Record<string, unknown>): EmailLog {
+  const contentType = (value: unknown): "image/png" | "application/pdf" => value === "application/pdf" ? "application/pdf" : "image/png";
   const attachment = data.attachment && typeof data.attachment === "object"
     ? (data.attachment as Record<string, unknown>)
     : null;
   const attachments = Array.isArray(data.attachments)
     ? data.attachments.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object").map((item) => ({
-        name: String(item.name ?? ""), contentType: "image/png" as const, size: Number(item.size ?? 0), sha256: String(item.sha256 ?? ""),
+        name: String(item.name ?? ""), contentType: contentType(item.contentType), size: Number(item.size ?? 0), sha256: String(item.sha256 ?? ""),
       }))
     : undefined;
   return {
@@ -113,7 +114,7 @@ function mapEmailLog(id: string, data: Record<string, unknown>): EmailLog {
     attachment: attachment
       ? {
           name: String(attachment.name ?? ""),
-          contentType: "image/png",
+          contentType: contentType(attachment.contentType),
           size: Number(attachment.size ?? 0),
           sha256: String(attachment.sha256 ?? ""),
         }

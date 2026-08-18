@@ -30,11 +30,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const body = (await request.json()) as {
       puntajeOnline?: unknown;
       puntajePresencial?: unknown;
+      participacionVirtual?: unknown;
+      participacionPresencial?: unknown;
       faseActual?: unknown;
       estadoCompetitivo?: unknown;
     };
     if (!validScore(body.puntajeOnline) || !validScore(body.puntajePresencial)) {
       return NextResponse.json({ ok: false, message: "Los puntajes deben ser números iguales o mayores que cero." }, { status: 400 });
+    }
+    if (typeof body.participacionVirtual !== "boolean" || typeof body.participacionPresencial !== "boolean") {
+      return NextResponse.json({ ok: false, message: "Los estados de participación deben ser booleanos." }, { status: 400 });
     }
     if (!PHASES.has(body.faseActual as CompetitivePhase) || !STATUSES.has(body.estadoCompetitivo as CompetitiveStatus)) {
       return NextResponse.json({ ok: false, message: "La fase o estado competitivo no es válido." }, { status: 400 });
@@ -44,6 +49,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       id,
       puntajeOnline: body.puntajeOnline,
       puntajePresencial: body.puntajePresencial,
+      participacionVirtual: body.participacionVirtual,
+      participacionPresencial: body.participacionPresencial,
       faseActual: body.faseActual as CompetitivePhase,
       estadoCompetitivo: body.estadoCompetitivo as CompetitiveStatus,
       updatedBy: admin.email,

@@ -39,6 +39,10 @@ describe("Indicaciones Finales", () => {
   });
 
   it("bloquea equipos no clasificados aunque tengan laboratorio", () => {
-    expect(getFinalInstructionsEligibilityError({ estadoCompetitivo: "no_clasificado", laboratorioAsignado: "Laboratorio de Tecnología" })).toContain("clasificados");
+    expect(getFinalInstructionsEligibilityError({ category: "colegios", estadoCompetitivo: "no_clasificado", laboratorioAsignado: "Laboratorio de Tecnología" })).toContain("clasificados");
+  });
+
+  it("reserva este correo sólo para Colegios", () => {
+    expect(getFinalInstructionsEligibilityError({ category: "universidades", estadoCompetitivo: "clasificado", laboratorioAsignado: "Laboratorio de Tecnología" })).toContain("sólo para Colegios");
   });
 });

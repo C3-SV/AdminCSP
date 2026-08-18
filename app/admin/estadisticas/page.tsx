@@ -90,11 +90,12 @@ export default function AdminEstadisticasPage() {
         ).length,
       };
     });
+    const colegioClassified = registrations.filter((item) => item.category === "colegios" && item.estadoCompetitivo === "clasificado");
     const byLaboratory = LABORATORY_OPTIONS.map(({ value, label }) => {
-      const teams = registrations.filter((item) => item.estadoCompetitivo === "clasificado" && item.laboratorioAsignado === value);
+      const teams = colegioClassified.filter((item) => item.laboratorioAsignado === value);
       return { value, label, total: teams.length, teams: teams.map((team) => team.teamName.trim() || "Equipo sin nombre") };
     });
-    const classifiedWithoutLaboratory = registrations.filter((item) => item.estadoCompetitivo === "clasificado" && !item.laboratorioAsignado).length;
+    const classifiedWithoutLaboratory = colegioClassified.filter((item) => !item.laboratorioAsignado).length;
     const classifiedWithLaboratory = byLaboratory.reduce((total, laboratory) => total + laboratory.total, 0);
 
     return {
@@ -143,7 +144,7 @@ export default function AdminEstadisticasPage() {
             { label: "Avanzaron a presencial", value: totals.progressedToOnsite },
             { label: "Pendientes competitivos", value: totals.pendingCompetitive },
             { label: "No clasificados", value: totals.notClassified },
-            { label: "Clasificados con laboratorio", value: totals.classifiedWithLaboratory },
+            { label: "Colegios clasificados con laboratorio", value: totals.classifiedWithLaboratory },
           ]} />
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -184,8 +185,8 @@ export default function AdminEstadisticasPage() {
           <Card>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
-                <h2 className="font-display text-lg font-semibold text-csp-primary">Distribución de laboratorios</h2>
-                <p className="mt-1 text-sm text-csp-black/70">Equipos clasificados y asignados a cada laboratorio.</p>
+                <h2 className="font-display text-lg font-semibold text-csp-primary">Distribución de laboratorios · Colegios</h2>
+                <p className="mt-1 text-sm text-csp-black/70">Equipos de Colegios clasificados y asignados a cada laboratorio.</p>
               </div>
               <p className="text-sm font-semibold text-csp-primary">{totals.classifiedWithoutLaboratory} sin asignar</p>
             </div>

@@ -35,5 +35,11 @@ export async function requireAuthorizedAdmin(request: Request) {
     throw new AdminAuthorizationError("Tu cuenta no está autorizada para esta acción.", 403);
   }
 
-  return { email, uid: decodedToken.uid };
+  return { email, uid: decodedToken.uid, role: allowlistSnapshot.data()?.role === "owner" ? "owner" as const : "admin" as const };
+}
+
+export async function requireOwnerAdmin(request: Request) {
+  const admin = await requireAuthorizedAdmin(request);
+  if (admin.role !== "owner") throw new AdminAuthorizationError("Esta acción requiere una cuenta administradora propietaria.", 403);
+  return admin;
 }
