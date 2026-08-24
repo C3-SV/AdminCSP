@@ -148,6 +148,18 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
     }, []);
   }, [filteredRegistrations]);
 
+  const filteredEmailCount = useMemo(() => {
+    const emails = new Set<string>();
+    filteredRegistrations.forEach((registration) => {
+      if (registration.contactEmail) emails.add(registration.contactEmail);
+      if (registration.category === "colegios" && registration.responsible?.email) emails.add(registration.responsible.email);
+      registration.members.forEach((member) => {
+        if (member.email) emails.add(member.email);
+      });
+    });
+    return emails.size;
+  }, [filteredRegistrations]);
+
   useEffect(() => {
     if (!toast) return;
     const timeout = window.setTimeout(() => setToast(null), 3500);
@@ -312,6 +324,15 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
             </p>
             <Button disabled={!omegaUpUsers.length} onClick={() => void handleCopyOmegaUpUsers()} type="button" variant="secondary">
               Copiar usuarios de OmegaUp
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-csp-soft bg-csp-white p-3">
+            <p className="text-sm text-csp-black/70">
+              {filteredEmailCount} correo{filteredEmailCount === 1 ? "" : "s"} en los filtros actuales.
+            </p>
+            <Button disabled={!filteredEmailCount} onClick={() => void handleCopyEmails()} type="button" variant="secondary">
+              Copiar correos
             </Button>
           </div>
 
