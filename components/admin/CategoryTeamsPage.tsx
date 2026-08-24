@@ -213,6 +213,31 @@ export function CategoryTeamsPage({ category, title, subtitle }: CategoryTeamsPa
     }
   };
 
+  const handleCopyEmails = async () => {
+    const emails = new Set<string>();
+    filteredRegistrations.forEach((registration) => {
+      if (registration.contactEmail) emails.add(registration.contactEmail);
+      if (registration.category === "colegios" && registration.responsible?.email) {
+        emails.add(registration.responsible.email);
+      }
+      registration.members.forEach((member) => {
+        if (member.email) emails.add(member.email);
+      });
+    });
+
+    if (!emails.size) {
+      setToast({ message: "No hay correos para copiar en la selección actual.", variant: "info" });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(Array.from(emails).join(", "));
+      setToast({ message: "Correos copiados", variant: "success" });
+    } catch {
+      setToast({ message: "No se pudo copiar al portapapeles.", variant: "error" });
+    }
+  };
+
   const handleDownloadCarnets = async () => {
     if (isGeneratingCarnets || !finalistParticipantCount) return;
     setIsGeneratingCarnets(true);
