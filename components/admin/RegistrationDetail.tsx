@@ -19,6 +19,7 @@ import { getInstitutionDisplay, getResponsibleOrContactDisplay } from "@/lib/adm
 import { resolveParticipationStatus } from "@/lib/admin/participationStatus";
 import { getDiplomaDeliverySuspension } from "@/lib/diplomas/diplomaAvailability";
 import { getDiplomaEmailScenarioLabel, type DiplomaEmailScenario } from "@/lib/diplomas/diplomaEmailScenario";
+import { getFinalInstructionsConfig } from "@/lib/email/finalInstructionsConfig";
 import { generateOnsiteFinalistCardInBrowser, generateOnsiteFinalistStoryInBrowser, generateVirtualParticipationCardInBrowser } from "@/lib/cards/clientVirtualParticipationCard";
 import {
   getRegistrationEmailHistory,
@@ -160,13 +161,14 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
   const onsiteState = current.emailStatus.classifiedToOnsite;
   const notClassifiedState = current.emailStatus.notClassified;
   const finalInstructionsState = current.emailStatus.finalInstructions;
+  const finalInstructionsConfig = current.category === "desconocida" ? undefined : getFinalInstructionsConfig(current.category);
   const diplomasVirtualState = current.emailStatus.diplomasVirtual;
   const diplomasPresencialState = current.emailStatus.diplomasPresencial;
   const canSend = current.status === "aprobada" && !usingMockData;
   const canSendOnsite = current.estadoCompetitivo === "clasificado" && !usingMockData;
   const canSendNotClassified = current.estadoCompetitivo === "no_clasificado" && !usingMockData;
   const canAssignLaboratory = current.estadoCompetitivo === "clasificado" && !usingMockData;
-  const canSendFinalInstructions = current.category === "colegios" && canAssignLaboratory && Boolean(current.laboratorioAsignado);
+  const canSendFinalInstructions = Boolean(finalInstructionsConfig) && canAssignLaboratory && Boolean(current.laboratorioAsignado);
   const virtualDiplomaSuspension = getDiplomaDeliverySuspension(current.category, "virtual");
   const presencialDiplomaSuspension = getDiplomaDeliverySuspension(current.category, "presencial");
   const canSendDiplomaVirtual = current.status === "aprobada" && current.category !== "desconocida" && current.participacionVirtual && !virtualDiplomaSuspension && !usingMockData;
@@ -509,7 +511,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <Button disabled={!canSendFinalInstructions} onClick={() => setShowFinalInstructionsConfirmation(true)} type="button">
               {finalInstructionsState.lastSentAt ? "Reenviar Indicaciones Finales" : "Enviar Indicaciones Finales"}
             </Button>
-            {!canSendFinalInstructions ? <p className="text-sm text-csp-black/70">Disponible sólo para Colegios clasificados con laboratorio asignado.</p> : null}
+            {!canSendFinalInstructions ? <p className="text-sm text-csp-black/70">Disponible sólo para Colegios o Universidades clasificados con laboratorio asignado.</p> : null}
             <div className="border-t border-csp-soft pt-4">
               <p className="font-semibold text-csp-primary">Fase Virtual</p>
               <p className="mt-1 text-sm text-csp-black/70">{diplomasVirtualState.lastSentAt ? `✓ Enviado el ${formatDate(diplomasVirtualState.lastSentAt)}` : "Pendiente"}</p>
@@ -622,10 +624,14 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
           <Card className="w-full max-w-lg space-y-3 shadow-xl">
             <h2 className="font-display text-xl font-semibold text-csp-primary">Confirmar Indicaciones Finales</h2>
             <p className="text-sm"><strong>Equipo:</strong> {current.teamName}</p>
+            <p className="text-sm"><strong>Categoría:</strong> {finalInstructionsConfig?.categoryLabel ?? "-"}</p>
+            <p className="text-sm"><strong>Final presencial:</strong> {finalInstructionsConfig?.finalDate ?? "-"}</p>
+            <p className="text-sm"><strong>Llegada:</strong> {finalInstructionsConfig ? `desde las ${finalInstructionsConfig.arrivalTime} en ${finalInstructionsConfig.arrivalLocation}` : "-"}</p>
             <p className="text-sm"><strong>Laboratorio:</strong> {current.laboratorioAsignado || "Sin asignar"}</p>
             <p className="text-sm"><strong>Integrantes:</strong> {current.members.map((member) => memberName(member.firstName, member.lastName)).join(", ")}</p>
             <p className="text-sm"><strong>Para:</strong> {primaryRecipient || "Sin correo"}</p>
             <p className="text-sm"><strong>CC:</strong> {copiedRecipients.join(", ") || "-"}</p>
+            {finalInstructionsConfig?.scheduleAttachment ? <p className="text-sm"><strong>Adjunto:</strong> {finalInstructionsConfig.scheduleAttachment.fileName}</p> : null}
             <p className="text-sm"><strong>Asunto:</strong> Indicaciones finales para la Gran Final de la Copa 2026</p>
             <p className="text-sm"><strong>Modo:</strong> {deliveryMode === "live" ? "Envío real por Brevo" : "Dry run: Brevo valida sin entregar el correo"}</p>
             {finalInstructionsState.lastSentAt ? <p className="rounded-md bg-csp-warning/10 p-2 text-sm">Ya se envió exitosamente el {formatDate(finalInstructionsState.lastSentAt)}. Esta acción generará un reenvío.</p> : null}

@@ -23,6 +23,9 @@ const nextConfig: NextConfig = {
       "assets/diplomas/DIPLOMAS VIRTUALES CSP 2026.pdf",
       "assets/virtual-card/Poppins-SemiBold.ttf",
     ],
+    "/api/admin/registrations/[id]/emails/final-instructions": [
+      "assets/final-instructions/cronograma-universidades.png",
+    ],
     "/api/admin/virtual-card-assets": [
       "assets/virtual-card/participacion-virtual-template.png",
       "assets/virtual-card/Poppins-SemiBold.ttf",

@@ -42,7 +42,7 @@ describe("Indicaciones Finales", () => {
     expect(getFinalInstructionsEligibilityError({ category: "colegios", estadoCompetitivo: "no_clasificado", laboratorioAsignado: "Laboratorio de Tecnología" })).toContain("clasificados");
   });
 
-  it("reserva este correo sólo para Colegios", () => {
-    expect(getFinalInstructionsEligibilityError({ category: "universidades", estadoCompetitivo: "clasificado", laboratorioAsignado: "Laboratorio de Tecnología" })).toContain("sólo para Colegios");
+  it("permite el correo para Universidades clasificadas con laboratorio", () => {
+    expect(getFinalInstructionsEligibilityError({ category: "universidades", estadoCompetitivo: "clasificado", laboratorioAsignado: "Laboratorio de Tecnología" })).toBeNull();
   });
 });
