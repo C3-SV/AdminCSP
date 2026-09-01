@@ -59,9 +59,9 @@ Sobre la competencia
 
 Recuerden algunas condiciones importantes:
 
-• competirán en equipos de 3 integrantes;
+• competirán en sus equipos de 3 integrantes;
 • cada equipo contará con una computadora;
-• la competencia tendrá una duración de 3 horas;
+• la competencia tendrá una duración de 4 horas;
 • les recomendamos llegar todos juntos y con suficiente anticipación.
 
 ${scheduleNotice}
