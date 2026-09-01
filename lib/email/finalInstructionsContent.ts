@@ -19,7 +19,7 @@ export function buildFinalInstructionsContent(registration: RegistrationDocument
   const config = registration.category === "desconocida" ? undefined : getFinalInstructionsConfig(registration.category);
   const teamName = registration.teamName.trim();
   const laboratory = registration.laboratorioAsignado?.trim();
-  if (!config) throw new Error("Las indicaciones finales sólo están disponibles para Colegios y Universidades.");
+  if (!config) throw new Error("Las indicaciones finales sólo están disponibles para Colegios, Universidades y AdE.");
   if (!teamName || !laboratory) throw new Error("El equipo necesita nombre y laboratorio asignado para generar las indicaciones finales.");
 
   const category = config.categoryLabel;
@@ -68,7 +68,7 @@ ${scheduleNotice}
 
 Instagram: @c3.elsalvador
 
-La jornada se extenderá aproximadamente hasta las 3:30 p. m., incluyendo las actividades posteriores y la premiación.
+La jornada se extenderá aproximadamente hasta las ${config.endTime}, incluyendo las actividades posteriores y la premiación.
 
 Estamos preparando esta final para que sea mucho más que únicamente la competencia: queremos que puedan conocer a otros participantes, compartir con personas de la comunidad y disfrutar toda la experiencia de la Copa.
 

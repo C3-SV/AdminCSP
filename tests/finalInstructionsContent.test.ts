@@ -45,8 +45,20 @@ describe("final instructions category configuration", () => {
 
     expect(content.textContent).toContain("5 de septiembre");
     expect(content.textContent).toContain("6:30 a. m.");
+    expect(content.textContent).toContain("3:45 p. m.");
     expect(content.textContent).toContain("Laboratorio de Informática 1");
     expect(content.attachmentName).toBe("cronograma-universidades.png");
+  });
+
+  it("allows AdE with the university date and closing time", () => {
+    const config = getFinalInstructionsConfig("ade");
+
+    expect(config).toBeDefined();
+    if (!config) return;
+    expect(config.finalDate).toContain("5 de septiembre");
+    expect(config.arrivalTime).toBe("6:30 a. m.");
+    expect(config.endTime).toBe("3:45 p. m.");
+    expect(buildFinalInstructionsContent(registration("ade")).textContent).toContain("3:45 p. m.");
   });
 
   it("keeps the existing school flow without a schedule attachment", () => {
@@ -54,6 +66,7 @@ describe("final instructions category configuration", () => {
 
     expect(content.textContent).toContain("15 de agosto");
     expect(content.textContent).toContain("7:15 a. m.");
+    expect(content.textContent).toContain("3:30 p. m.");
     expect(content.attachmentName).toBeUndefined();
   });
 });

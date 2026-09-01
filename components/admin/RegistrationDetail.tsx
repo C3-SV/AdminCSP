@@ -511,7 +511,7 @@ export function RegistrationDetail({ registration, usingMockData }: { registrati
             <Button disabled={!canSendFinalInstructions} onClick={() => setShowFinalInstructionsConfirmation(true)} type="button">
               {finalInstructionsState.lastSentAt ? "Reenviar Indicaciones Finales" : "Enviar Indicaciones Finales"}
             </Button>
-            {!canSendFinalInstructions ? <p className="text-sm text-csp-black/70">Disponible sólo para Colegios o Universidades clasificados con laboratorio asignado.</p> : null}
+            {!canSendFinalInstructions ? <p className="text-sm text-csp-black/70">Disponible sólo para equipos clasificados de Colegios, Universidades o AdE con laboratorio asignado.</p> : null}
             <div className="border-t border-csp-soft pt-4">
               <p className="font-semibold text-csp-primary">Fase Virtual</p>
               <p className="mt-1 text-sm text-csp-black/70">{diplomasVirtualState.lastSentAt ? `✓ Enviado el ${formatDate(diplomasVirtualState.lastSentAt)}` : "Pendiente"}</p>
