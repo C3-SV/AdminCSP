@@ -1,4 +1,34 @@
-import { RegistrationDocument, RegistrationStatus } from "@/types/admin/registration";
+import { LABORATORY_OPTIONS, REGISTRATION_CATEGORY_LABELS } from "@/constants/admin";
+import { RegistrationDocument, RegistrationStatus, KnownRegistrationCategory, LaboratoryAssignment } from "@/types/admin/registration";
+
+export type LaboratoryDistributionEntry = {
+  value: LaboratoryAssignment;
+  label: string;
+  total: number;
+  teams: string[];
+};
+
+export function getLaboratoryDistribution(
+  registrations: RegistrationDocument[],
+  categories: KnownRegistrationCategory[],
+  options: { includeCategoryLabel?: boolean } = {},
+): LaboratoryDistributionEntry[] {
+  const classified = registrations.filter(
+    (registration) => categories.includes(registration.category as KnownRegistrationCategory) && registration.estadoCompetitivo === "clasificado",
+  );
+
+  return LABORATORY_OPTIONS.map(({ value, label }) => {
+    const teams = classified
+      .filter((registration) => registration.laboratorioAsignado === value)
+      .map((registration) => {
+        const teamName = registration.teamName.trim() || "Equipo sin nombre";
+        return options.includeCategoryLabel
+          ? `${REGISTRATION_CATEGORY_LABELS[registration.category as KnownRegistrationCategory]} · ${teamName}`
+          : teamName;
+      });
+    return { value, label, total: teams.length, teams };
+  });
+}
 
 export function countByStatus(
   registrations: RegistrationDocument[],

@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { Card } from "@/components/ui/Card";
-import { LABORATORY_OPTIONS } from "@/constants/admin";
 import { getRegistrations, resolveRegistrationCompetitiveView } from "@/services/admin/registrations";
 import { KnownRegistrationCategory, RegistrationDocument } from "@/types/admin/registration";
-import { countByStatus, countParticipants, uniqueInstitutions } from "@/utils/admin/metrics";
+import { countByStatus, countParticipants, getLaboratoryDistribution, uniqueInstitutions } from "@/utils/admin/metrics";
 
 function BarRow({ label, value, total }: { label: string; value: number; total: number }) {
   const percentage = total ? Math.round((value / total) * 100) : 0;
@@ -94,10 +93,11 @@ export default function AdminEstadisticasPage() {
       };
     });
     const colegioClassified = registrations.filter((item) => item.category === "colegios" && item.estadoCompetitivo === "clasificado");
-    const byLaboratory = LABORATORY_OPTIONS.map(({ value, label }) => {
-      const teams = colegioClassified.filter((item) => item.laboratorioAsignado === value);
-      return { value, label, total: teams.length, teams: teams.map((team) => team.teamName.trim() || "Equipo sin nombre") };
-    });
+    const byLaboratory = getLaboratoryDistribution(registrations, ["colegios"]);
+    const universityAdeClassified = registrations.filter((item) =>
+      (item.category === "universidades" || item.category === "ade") && item.estadoCompetitivo === "clasificado",
+    );
+    const byLaboratoryUniversityAde = getLaboratoryDistribution(registrations, ["universidades", "ade"], { includeCategoryLabel: true });
     const classifiedWithoutLaboratory = colegioClassified.filter((item) => !item.laboratorioAsignado).length;
     const classifiedWithLaboratory = byLaboratory.reduce((total, laboratory) => total + laboratory.total, 0);
 
@@ -127,6 +127,8 @@ export default function AdminEstadisticasPage() {
       byLaboratory,
       classifiedWithLaboratory,
       classifiedWithoutLaboratory,
+      byLaboratoryUniversityAde,
+      universityAdeClassifiedWithoutLaboratory: universityAdeClassified.filter((item) => !item.laboratorioAsignado).length,
       topInstitutions: uniqueInstitutions(registrations),
     };
   }, [registrations]);
@@ -196,6 +198,31 @@ export default function AdminEstadisticasPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {totals.byLaboratory.map((laboratory) => (
                 <div className="rounded-md border border-csp-soft bg-csp-soft/20 p-4" key={laboratory.value}>
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-semibold text-csp-primary">{laboratory.label}</h3>
+                    <span className="rounded-full bg-csp-blue px-2.5 py-1 text-sm font-bold text-white">{laboratory.total}</span>
+                  </div>
+                  {laboratory.teams.length ? (
+                    <ul className="mt-3 space-y-1 text-sm text-csp-black/80">
+                      {laboratory.teams.map((team, index) => <li key={`${laboratory.value}-${team}-${index}`}>{team}</li>)}
+                    </ul>
+                  ) : <p className="mt-3 text-sm text-csp-black/60">Sin equipos asignados.</p>}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h2 className="font-display text-lg font-semibold text-csp-primary">Distribución de laboratorios · Universidades + AdE</h2>
+                <p className="mt-1 text-sm text-csp-black/70">Equipos de Universidades y AdE clasificados y asignados a cada laboratorio.</p>
+              </div>
+              <p className="text-sm font-semibold text-csp-primary">{totals.universityAdeClassifiedWithoutLaboratory} sin asignar</p>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {totals.byLaboratoryUniversityAde.map((laboratory) => (
+                <div className="rounded-md border border-csp-soft bg-csp-soft/20 p-4" key={`universidades-ade-${laboratory.value}`}>
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-semibold text-csp-primary">{laboratory.label}</h3>
                     <span className="rounded-full bg-csp-blue px-2.5 py-1 text-sm font-bold text-white">{laboratory.total}</span>

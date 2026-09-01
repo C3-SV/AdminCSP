@@ -32,6 +32,8 @@ describe("final instructions category configuration", () => {
   it("uses the university date, arrival time and schedule attachment", () => {
     const config = getFinalInstructionsConfig("universidades");
 
+    expect(config).toBeDefined();
+    if (!config) return;
     expect(config.categoryLabel).toBe("Universidades");
     expect(config.finalDate).toContain("5 de septiembre");
     expect(config.arrivalTime).toBe("6:30 a. m.");

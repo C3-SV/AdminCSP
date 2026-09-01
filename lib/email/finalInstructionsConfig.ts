@@ -40,6 +40,6 @@ export const FINAL_INSTRUCTIONS_CONFIG: Partial<Record<KnownRegistrationCategory
 };
 
 export function getFinalInstructionsConfig(category: KnownRegistrationCategory | "desconocida") {
+  if (category === "desconocida") return undefined;
   return FINAL_INSTRUCTIONS_CONFIG[category];
 }
-
