@@ -58,7 +58,9 @@ describe("final instructions category configuration", () => {
     expect(config.finalDate).toContain("5 de septiembre");
     expect(config.arrivalTime).toBe("6:30 a. m.");
     expect(config.endTime).toBe("3:45 p. m.");
-    expect(buildFinalInstructionsContent(registration("ade")).textContent).toContain("3:45 p. m.");
+    const content = buildFinalInstructionsContent(registration("ade"));
+    expect(content.textContent).toContain("3:45 p. m.");
+    expect(content.attachmentName).toBe("cronograma-universidades.png");
   });
 
   it("keeps the existing school flow without a schedule attachment", () => {

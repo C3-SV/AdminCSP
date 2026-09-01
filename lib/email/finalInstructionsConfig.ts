@@ -46,6 +46,11 @@ export const FINAL_INSTRUCTIONS_CONFIG: Partial<Record<KnownRegistrationCategory
     arrivalTime: "6:30 a. m.",
     arrivalLocation: "la zona de los auditorios de ESEN",
     endTime: "3:45 p. m.",
+    scheduleAttachment: {
+      fileName: "cronograma-universidades.png",
+      relativePath: "assets/final-instructions/cronograma-universidades.png",
+      contentType: "image/png",
+    },
   },
 };
 
