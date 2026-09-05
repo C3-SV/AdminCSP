@@ -1,4 +1,4 @@
-import { TextareaHTMLAttributes } from "react";
+import { forwardRef, TextareaHTMLAttributes } from "react";
 import { cn } from "@/utils/admin";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
@@ -6,13 +6,13 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
 };
 
-export function Textarea({
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({
   label,
   error,
   className,
   id,
   ...props
-}: TextareaProps) {
+}, ref) {
   const errorId = error && id ? `${id}-error` : undefined;
   const describedBy = [props["aria-describedby"], errorId].filter(Boolean).join(" ") || undefined;
 
@@ -32,6 +32,7 @@ export function Textarea({
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : undefined}
         id={id}
+        ref={ref}
         {...props}
       />
       {error ? (
@@ -42,5 +43,5 @@ export function Textarea({
       ) : null}
     </div>
   );
-}
+});
 

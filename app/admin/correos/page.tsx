@@ -20,6 +20,7 @@ const TYPE_LABELS: Record<EmailLog["emailType"], string> = {
   diplomas_presencial: "Diplomas fase presencial",
   finalist: "Finalista",
   winner: "Ganador",
+  custom: "Correo personalizado",
 };
 
 export default function AdminCorreosPage() {
@@ -60,7 +61,7 @@ export default function AdminCorreosPage() {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return logs;
-    return logs.filter((log) => [log.teamName, log.to, log.subject, log.emailType, ...log.cc].join(" ").toLowerCase().includes(term));
+    return logs.filter((log) => [log.teamName, log.to, ...(log.toEmails ?? []), log.subject, log.emailType, ...log.cc, ...(log.bcc ?? [])].join(" ").toLowerCase().includes(term));
   }, [logs, search]);
 
   return (
@@ -74,8 +75,35 @@ export default function AdminCorreosPage() {
       {loading ? <p className="text-sm text-csp-black/70">Cargando correos...</p> : !filtered.length ? <EmptyState description="No hay correos administrativos registrados." title="Sin correos" /> : (
         <div className="overflow-x-auto rounded-lg border border-csp-soft bg-csp-white shadow-csp">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-csp-soft/70 text-csp-primary"><tr><th className="px-3 py-3">Fecha</th><th className="px-3 py-3">Equipo</th><th className="px-3 py-3">Tipo</th><th className="px-3 py-3">Para</th><th className="px-3 py-3">Estado</th><th className="px-3 py-3">Enviado por</th></tr></thead>
-            <tbody>{filtered.map((log) => <tr className="border-t border-csp-soft" key={log.id}><td className="px-3 py-3">{formatDate(log.createdAt)}</td><td className="px-3 py-3 font-medium text-csp-primary">{log.teamName || "-"}</td><td className="px-3 py-3">{TYPE_LABELS[log.emailType]}</td><td className="px-3 py-3">{log.to}</td><td className="px-3 py-3">{log.status}</td><td className="px-3 py-3">{log.createdBy || "-"}</td></tr>)}</tbody>
+            <thead className="bg-csp-soft/70 text-csp-primary">
+              <tr>
+                <th className="px-3 py-3">Fecha</th>
+                <th className="px-3 py-3">Equipo</th>
+                <th className="px-3 py-3">Tipo y asunto</th>
+                <th className="px-3 py-3">Destinatarios</th>
+                <th className="px-3 py-3">Estado</th>
+                <th className="px-3 py-3">Enviado por</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((log) => (
+                <tr className="border-t border-csp-soft align-top" key={log.id}>
+                  <td className="whitespace-nowrap px-3 py-3">{formatDate(log.createdAt)}</td>
+                  <td className="px-3 py-3 font-medium text-csp-primary">{log.teamName || "—"}</td>
+                  <td className="max-w-xs px-3 py-3">
+                    <p className="font-medium">{TYPE_LABELS[log.emailType]}</p>
+                    <p className="mt-1 text-xs text-csp-black/60">{log.subject || "Sin asunto"}</p>
+                  </td>
+                  <td className="max-w-sm px-3 py-3 text-xs">
+                    <p><strong>Para:</strong> {(log.toEmails?.length ? log.toEmails : [log.to]).join(", ")}</p>
+                    {log.cc.length ? <p className="mt-1"><strong>CC:</strong> {log.cc.join(", ")}</p> : null}
+                    {log.bcc?.length ? <p className="mt-1"><strong>CCO:</strong> {log.bcc.join(", ")}</p> : null}
+                  </td>
+                  <td className="px-3 py-3">{log.status}</td>
+                  <td className="px-3 py-3">{log.createdBy || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       )}

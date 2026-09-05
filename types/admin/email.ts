@@ -26,16 +26,19 @@ export type EmailLogType =
   | "diplomas_virtual"
   | "diplomas_presencial"
   | "finalist"
-  | "winner";
+  | "winner"
+  | "custom";
 
 export type EmailLog = {
   id: string;
-  teamId: string;
-  teamName: string;
+  teamId?: string;
+  teamName?: string;
   emailType: EmailLogType;
   subject: string;
   to: string;
+  toEmails?: string[];
   cc: string[];
+  bcc?: string[];
   status: Exclude<EmailDeliveryStatus, "not_sent">;
   brevoMessageId?: string;
   attachment?: {

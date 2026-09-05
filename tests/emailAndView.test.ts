@@ -95,4 +95,38 @@ describe("Brevo payload", () => {
     expect(body).toMatchObject({ subject: "Asunto directo", htmlContent: "<p>Contenido</p>", textContent: "Contenido" });
     expect(body.templateId).toBeUndefined();
   });
+
+  it("sends multiple To recipients plus CC and BCC without changing the direct-content flow", async () => {
+    vi.stubEnv("BREVO_API_KEY", "xkeysib-test");
+    vi.stubEnv("BREVO_SENDER_EMAIL", "no-reply@c3.com.sv");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ messageId: "message-custom" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { sendBrevoEmail } = await import("@/lib/email/sendBrevoEmail");
+
+    await sendBrevoEmail({
+      to: [{ email: "uno@example.com" }, { email: "dos@example.com" }],
+      cc: [{ email: "copia@example.com" }],
+      bcc: [{ email: "oculto@example.com" }],
+      subject: "Aviso",
+      htmlContent: "<p>Aviso</p>",
+      textContent: "Aviso",
+      idempotencyKey: "custom-operation-123456",
+      sandbox: true,
+    });
+
+    const request = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      sender: { email: "no-reply@c3.com.sv" },
+      to: [{ email: "uno@example.com" }, { email: "dos@example.com" }],
+      cc: [{ email: "copia@example.com" }],
+      bcc: [{ email: "oculto@example.com" }],
+      headers: {
+        "Idempotency-Key": "custom-operation-123456",
+        "X-Sib-Sandbox": "drop",
+      },
+    });
+  });
 });

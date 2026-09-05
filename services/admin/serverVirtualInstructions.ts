@@ -108,7 +108,9 @@ function mapEmailLog(id: string, data: Record<string, unknown>): EmailLog {
     emailType: data.emailType as EmailLogType,
     subject: String(data.subject ?? ""),
     to: String(data.to ?? ""),
+    toEmails: Array.isArray(data.toEmails) ? data.toEmails.filter((email): email is string => typeof email === "string") : undefined,
     cc: Array.isArray(data.cc) ? data.cc.filter((email): email is string => typeof email === "string") : [],
+    bcc: Array.isArray(data.bcc) ? data.bcc.filter((email): email is string => typeof email === "string") : [],
     status: data.status as EmailLog["status"],
     brevoMessageId: typeof data.brevoMessageId === "string" ? data.brevoMessageId : undefined,
     attachment: attachment

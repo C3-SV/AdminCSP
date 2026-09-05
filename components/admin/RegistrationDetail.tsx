@@ -61,6 +61,7 @@ function emailTypeLabel(type: EmailLog["emailType"]) {
     diplomas_presencial: "Diplomas fase presencial",
     finalist: "Finalista",
     winner: "Ganador",
+    custom: "Correo personalizado",
   }[type];
 }
 

@@ -12,6 +12,7 @@ export const ADMIN_ROUTES = {
   root: adminPath(),
   inscripciones: adminPath("/inscripciones"),
   correos: adminPath("/correos"),
+  correoPersonalizado: adminPath("/correo-personalizado"),
   colegios: adminPath("/colegios"),
   universidades: adminPath("/universidades"),
   ade: adminPath("/ade"),

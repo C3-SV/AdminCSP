@@ -19,6 +19,7 @@ type ApiResponse = {
   registration?: RegistrationDocument;
   logs?: EmailLog[];
   log?: EmailLog;
+  alreadyProcessed?: boolean;
   emailScenario?: DiplomaEmailScenario;
   deliveryMode?: "live" | "dry_run";
   settings?: { enabled: boolean; updatedBy?: string; updatedAt?: string };
@@ -199,6 +200,30 @@ export async function sendVirtualInstructions({
   );
   if (!body.registration) throw new Error("No se recibió la inscripción actualizada.");
   return { registration: body.registration, log: body.log };
+}
+
+export async function sendCustomEmail({
+  user,
+  operationId,
+  to,
+  cc,
+  bcc,
+  subject,
+  content,
+}: {
+  user: FirebaseSessionUser | null;
+  operationId: string;
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  content: string;
+}) {
+  const body = await authorizedRequest(user, "/api/admin/emails/custom", {
+    method: "POST",
+    body: JSON.stringify({ operationId, to, cc, bcc, subject, content }),
+  });
+  return { log: body.log, alreadyProcessed: body.alreadyProcessed === true };
 }
 
 export async function getEmailDeliverySettings({ user }: { user: FirebaseSessionUser | null }) {

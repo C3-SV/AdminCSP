@@ -1,13 +1,14 @@
 import "server-only";
 
-type BrevoRecipient = {
+export type BrevoRecipient = {
   email: string;
   name?: string;
 };
 
 type BrevoCommonInput = {
-  to: BrevoRecipient;
+  to: BrevoRecipient | BrevoRecipient[];
   cc?: BrevoRecipient[];
+  bcc?: BrevoRecipient[];
   idempotencyKey?: string;
   attachment?: {
     name: string;
@@ -49,7 +50,7 @@ function getBrevoApiKey() {
 }
 
 export async function sendBrevoEmail(input: SendBrevoEmailInput): Promise<BrevoSendEmailResponse> {
-  const { to, cc = [], idempotencyKey, attachment, attachments, sandbox = false } = input;
+  const { to, cc = [], bcc = [], idempotencyKey, attachment, attachments, sandbox = false } = input;
   const apiKey = getBrevoApiKey();
 
   const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
@@ -58,7 +59,7 @@ export async function sendBrevoEmail(input: SendBrevoEmailInput): Promise<BrevoS
   const replyToName = process.env.BREVO_REPLY_TO_NAME?.trim();
 
   const body: Record<string, unknown> = {
-    to: [{ email: to.email, name: to.name }],
+    to: Array.isArray(to) ? to : [{ email: to.email, name: to.name }],
   };
   if ("templateId" in input) {
     body.templateId = input.templateId;
@@ -71,6 +72,9 @@ export async function sendBrevoEmail(input: SendBrevoEmailInput): Promise<BrevoS
 
   if (cc.length) {
     body.cc = cc;
+  }
+  if (bcc.length) {
+    body.bcc = bcc;
   }
   if (idempotencyKey) {
     body.headers = { "Idempotency-Key": idempotencyKey };
